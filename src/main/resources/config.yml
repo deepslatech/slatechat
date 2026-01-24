@@ -2,33 +2,33 @@
 # Message sent when the player doesnt have permission for
 # a channel or any command of the plugin.
 #
-no_permission: '&cYou do not have permission!'
+no_permission: "<red>You do not have permission!"
 
 #
 # Message sent to the sender saying the amount of players
 # who readed the player message.
 #
-amount_readed: '&5<amount> players saw your message!'
+amount_readed: "<dark_purple><amount> players saw your message!"
 
 #
 # Message sent when no one readed the player message
 #
-no_one: '&cNo one readed your message! :c'
+no_one: "<red>No one readed your message! :c"
 
 #
 # When console or any non-player tries to execute a command they shouldn't
 #
-players_only: '&cOnly players can execute this command!'
+players_only: "<red>Only players can execute this command!"
 
 #
 # Sent when player incorrectly uses /channel
 #
-channel_command_usage: '&cUsage: /ch <channel>'
+channel_command_usage: "<red>Usage: /ch <channel>"
 
 #
 # Sent when the player tries to do chat without any text
 #
-channel_usage_message: '&cUsage: /{command} <message>'
+channel_usage_message: "<red>Usage: /{command} <message>"
 
 #
 # Message sent when the player changes the main channel with /ch
@@ -36,18 +36,17 @@ channel_usage_message: '&cUsage: /{command} <message>'
 # <channelName> - Full name of the channel
 # <channelCommand> - Command of the channel
 #
-channel_changed: '&aChannel changed to <channelName> - <channelCommand>'
+channel_changed: "<green>Channel changed to <channelName> - <channelCommand>"
 
 #
 # Sent when the player do not have permission to use a channel or somehow the channel do not exist
 #
-invalid_channel: '&cInvalid channel!'
+invalid_channel: "<red>Invalid channel!"
 
 #
 # Text sent when plugin is reloaded
-#     NOT IMPLEMENTED YET!
 #
-plugin_reloaded: '&aPlugin reloaded.'
+plugin_reloaded: "<green>Plugin reloaded."
 
 #
 # Should all chat messages be sent to console?
@@ -63,7 +62,7 @@ log_to_console: true
 # <message> - The message itself
 # Any PAPI placeholder
 #
-console_log: '[<channel>] %luckperms_prefix%<player>> <message>'
+console_log: "[<channel>] %luckperms_prefix%<player>> <message>"
 
 #
 # Enable or disable plugin components here
@@ -110,13 +109,13 @@ modules:
         spam:
             enable: false
             limit: 10
-            message: "&aMessage canceled because contain spam."
+            message: "<green>Message canceled because contain spam."
         #
         # Cancel sending repeated messages
         #
         flood:
             enable: false
-            message: "&aYou cannot send a message like the previous message."
+            message: "<green>You cannot send a message like the previous message."
         #
         # Change the sentence to lowercase
         # If disabled, the message will be sent as entered.

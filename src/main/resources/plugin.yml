@@ -7,6 +7,8 @@ website: github.com/Luucx7/simplexChat
 depend: [PlaceholderAPI]
 softdepend: [DiscordSRV]
 commands:
+    ch:
+        aliases: [channel, canal, canais]
     chatcor:
         aliases: [chatcolor, chatcor]
     simplexchat:

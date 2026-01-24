@@ -4,16 +4,21 @@
 # It will only allow vanilla color codes instead
 #
 enable_rgb: true
+# Keywords to clear/remove the chat color
+clear_keywords:
+    - "clear"
+    - "remove"
+    - "reset"
 #
 # Messages
 #
 # Console can't choose a color
-only_players: '&cAvaliable only for players!'
+only_players: "<red>Avaliable only for players!"
 # No argument provided on command
-no_arg: '&cType an color! /chatcolor #<color>'
+no_arg: "<red>Type an color! /chatcolor #<color>"
 # Chat color removed
-removed: '&aYour chat color was removed!'
+removed: "<green>Your chat color was removed!"
 # Invalid HEX color
-invalid: '&cType an valid hex color! /chatcolor #<color>'
+invalid: "<red>Type an valid hex color! /chatcolor #<color>"
 # Chatcolor changed
-success: '&aThe color of your chat was changed to %chat_color%this.'
+success: "<green>The color of your chat was changed to %chat_color%this<green>."

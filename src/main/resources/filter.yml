@@ -4,17 +4,18 @@
 #
 
 #
-# Texts under this string list will be completely removed.
+# Words under this string list will be censored (replaced with asterisks)
 #
-remove:
-  - 'bitch'
+blocked_words:
+    - "bitch"
+    - "damn"
 
 #
-# The text before the : will be replaced withe everything after the :
+# The text before the -> will be replaced with everything after the ->
 # Example:
-# - 'barney:swarley'
+# - 'barney->swarley'
 #
-# Everytime you tipe "barney", the text will be replaced with "swarley"
+# Everytime you type "barney", the text will be replaced with "swarley"
 #
 replace:
-  - 'barney:swarley'
+    - "barney->swarley"
