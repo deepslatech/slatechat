@@ -108,8 +108,8 @@ class Mensagem(
                 val stripped = consoleFinal.replace(Regex("&[0-9a-fk-or]"), "")
                 Bukkit.getLogger().info(stripped)
 
-                // Send to DiscordSRV main channel if present and enabled
-                if (SimplexChat.isDiscordSRV) {
+                // Send to DiscordSRV main channel if enabled explicitly to avoid duplicates
+                if (SimplexChat.isDiscordSRV && SimplexChat.instance.config.getBoolean("modules.discordsrv_send", false)) {
                     sendToDiscord(stripped)
                 }
             }
@@ -202,7 +202,7 @@ class Mensagem(
                 ?.replace("<amount>", count.toString()) ?: ""
             
             if (actionbarMsg.isNotBlank()) {
-                audience.sendActionBar(legacy.deserialize(actionbarMsg))
+                audience.sendActionBar(mm.deserialize(actionbarMsg))
             }
         }
     }
