@@ -79,8 +79,8 @@ class Mensagem(
             // Apply PlaceholderAPI to the entire formatted string
             var withPlaceholders = PlaceholderAPI.setPlaceholders(sender, formatted)
             
-            // Convert MineDown syntax to MiniMessage
-            withPlaceholders = MineDownConverter.convert(withPlaceholders)
+            // Convert MineDown syntax to MiniMessage (pass player for permission checks)
+            withPlaceholders = MineDownConverter.convert(withPlaceholders, sender)
             // Support line breaks using <br> or literal \n from configs
             withPlaceholders = convertBreaks(withPlaceholders)
             // Convert hex colors (#RRGGBB) to hex MiniMessage format <#RRGGBB>

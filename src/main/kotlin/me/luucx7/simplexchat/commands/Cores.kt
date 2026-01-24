@@ -68,8 +68,8 @@ class Cores : CommandExecutor {
         val successRaw = SimplexChat.colorsConfig.getString("success") ?: "<green>Color updated!"
         var withPlaceholders = PlaceholderAPI.setPlaceholders(sender, successRaw)
         
-        // Convert MineDown syntax to MiniMessage
-        withPlaceholders = MineDownConverter.convert(withPlaceholders)
+        // Convert MineDown syntax to MiniMessage (pass player for permission checks)
+        withPlaceholders = MineDownConverter.convert(withPlaceholders, sender)
         // Convert hex and legacy codes to MiniMessage and ensure reset after placeholder
         val converted = convertColorCodes(withPlaceholders) + "<reset>"
         sender.sendMessage(mm.deserialize(converted))

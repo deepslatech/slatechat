@@ -1,5 +1,6 @@
 package me.luucx7.simplexchat.core.model
 
+import org.bukkit.entity.Player
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -7,27 +8,26 @@ import java.util.regex.Pattern
  * Converts MineDown-style syntax to MiniMessage format
  * Examples:
  * [Text](blue) - Blue text
- * [Text](https://example.com) - Clickable link
- * [Text](/command) - Clickable command
- * [Text](https://example.com Hover Text) - Link with hover
+ * [Text](https://example.com) - Clickable link with automatic hover showing URL
+ * [Text](/command) - Clickable command with automatic hover showing command
+ * [Text](https://example.com Custom Hover) - Link with custom hover (requires permission)
  * [Text](#fff-#000) - Gradient from #fff to #000
  * [Text](rainbow) - Rainbow effect
  * [Text](rainbow:20) - Rainbow with duration 20
- * [Text](blue underline https://example.com Hover Text) - Combined formatting + link + hover
+ * [Text](blue underline https://example.com) - Combined formatting + link with auto hover
  */
 object MineDownConverter {
 
     private val MINEDOWN_PATTERN: Pattern = Pattern.compile("\\[([^\\]]+)\\]\\(([^)]+)\\)")
 
-    fun convert(text: String): String {
-        var result = text
-        val matcher = MINEDOWN_PATTERN.matcher(result)
+    fun convert(text: String, player: Player? = null): String {
+        val matcher = MINEDOWN_PATTERN.matcher(text)
         val buffer = StringBuffer()
 
         while (matcher.find()) {
             val displayText = matcher.group(1)
             val args = matcher.group(2)
-            val miniMessage = parseMineDown(displayText, args)
+            val miniMessage = parseMineDown(displayText, args, player)
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(miniMessage))
         }
 
@@ -35,7 +35,7 @@ object MineDownConverter {
         return buffer.toString()
     }
 
-    private fun parseMineDown(text: String, args: String): String {
+    private fun parseMineDown(text: String, args: String, player: Player? = null): String {
         // Parse arguments: can be color, formatting, link, hover, gradient, or rainbow
         val parts = args.split("\\s+".toRegex()).filter { it.isNotEmpty() }
         
@@ -84,28 +84,41 @@ object MineDownConverter {
                 isFormatting(part) -> {
                     formatting.add(part.lowercase())
                 }
+                // If not recognized and no link yet, treat as potential hover text
+                else -> {
+                    hoverParts.add(part)
+                }
             }
         }
 
-        val hover = if (hoverParts.isNotEmpty()) hoverParts.joinToString(" ") else null
+        // Handle hover text with permission check
+        var hover: String? = null
+        if (link != null) {
+            // If there's a link/command
+            if (hoverParts.isNotEmpty()) {
+                // Custom hover text provided - check permission
+                if (player?.hasPermission("chat.minedown.customhover") == true) {
+                    hover = hoverParts.joinToString(" ")
+                } else {
+                    // No permission - use automatic hover (show the link/command)
+                    hover = link
+                }
+            } else {
+                // No custom hover - automatically show the link/command
+                hover = link
+            }
+        } else if (hoverParts.isNotEmpty()) {
+            // No link, just hover text (no permission needed for hover-only)
+            hover = hoverParts.joinToString(" ")
+        }
 
         // Build final MiniMessage string with proper nesting
+        // Order: hover (outermost) -> click -> formatting -> color (innermost)
         var result = text
         
-        // Apply click action (outermost if present)
-        if (link != null) {
-            val clickAction = if (link.startsWith("/")) {
-                "run_command"
-            } else {
-                "open_url"
-            }
-            result = "<click:$clickAction:$link>$result</click>"
-        }
-        
-        // Apply hover (inside click if present)
-        if (hover != null) {
-            result = "<hover:show_text:'${hover.trim()}'>$result</hover>"
-            
+        // Apply color (innermost)
+        if (color != null) {
+            result = "<$color>$result<reset>"
         }
         
         // Apply formatting (bold, italic, etc.)
@@ -136,9 +149,20 @@ object MineDownConverter {
             }
         }
         
-        // Apply color (innermost)
-        if (color != null) {
-            result = "<$color>$result<reset>"
+        // Apply click action
+        if (link != null) {
+            val clickAction = if (link.startsWith("/")) {
+                "run_command"
+            } else {
+                "open_url"
+            }
+            result = "<click:$clickAction:$link>$result</click>"
+        }
+        
+        // Apply hover (outermost) - MUST be outside click for MiniMessage
+        if (hover != null) {
+            val escapedHover = hover.trim().replace("'", "\\'")
+            result = "<hover:show_text:'$escapedHover'>$result</hover>"
         }
         
         return result
