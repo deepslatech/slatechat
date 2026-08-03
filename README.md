@@ -65,7 +65,7 @@ Exposed under the `chat` identifier (`%chat_<placeholder>%`):
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `chat.setcolor`             | Allows the player to use `/chatcolor` and change their chat color. The player still needs `chat.colored` for colors to apply. |
 | `chat.colored`               | Allows the player to use color in chat — legacy (`&6`), HEX (`#RRGGBB`), and MineDown color/gradient/rainbow args. Without it, no color is applied anywhere (raw codes are stripped, MineDown color args are silently ignored) and `/chatcolor` refuses to set one. |
-| `chat.bypasscount`          | Player is excluded from the actionbar receivers count. Useful for vanished admins.                                            |
+| `chat.count.bypass`          | Player is excluded from the actionbar receivers count. Useful for vanished admins.                                            |
 | `chat.hover.bypass`         | Allows custom hover text in MineDown links/commands. Without this, hover shows the link/command itself automatically.         |
 | `chat.reload`                | Allows the admins to reload the plugin with `/slatechat reload`.                                                              |
 | `chat.local`                 | Permission to use the local channel (if `restrict: true` in `channels.yml`).                                                  |

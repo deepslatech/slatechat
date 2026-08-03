@@ -201,14 +201,14 @@ class Mensagem(
         if (channel.actionbar && player.uniqueId == sender.uniqueId) {
             val count = if (channel.broadcast) {
                 Bukkit.getOnlinePlayers()
-                    .count { it.uniqueId != sender.uniqueId && !it.hasPermission("chat.bypasscount") }
+                    .count { it.uniqueId != sender.uniqueId && !it.hasPermission("chat.count.bypass") }
             } else {
                 Bukkit.getOnlinePlayers()
                     .count {
                         it.world == sender.world &&
                             it.location.distance(sender.location) <= channel.radius &&
                             it.uniqueId != sender.uniqueId &&
-                            !it.hasPermission("chat.bypasscount")
+                            !it.hasPermission("chat.count.bypass")
                     }
             }
 
