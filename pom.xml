@@ -7,12 +7,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!-- Project coordinates -->
-    <groupId>me.luucx7.simplexchat</groupId>
-    <artifactId>SimplexChat</artifactId>
-    <version>2.0.0</version>
+    <groupId>ch.deepslate.slatechat</groupId>
+    <artifactId>SlateChat</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>SimplexChat</name>
+    <name>SlateChat</name>
 
     <!-- Global project properties -->
     <properties>

@@ -14,6 +14,8 @@ clear_keywords:
 #
 # Console can't choose a color
 only_players: "<red>Avaliable only for players!"
+# Sent when the player lacks chat.setcolor or chat.colored
+no_permission: "<red>You do not have permission!"
 # No argument provided on command
 no_arg: "<red>Type an color! /chatcolor #<color>"
 # Chat color removed

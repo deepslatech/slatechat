@@ -28,7 +28,7 @@ channel_command_usage: "<red>Usage: /ch <channel>"
 #
 # Sent when the player tries to do chat without any text
 #
-channel_usage_message: "<red>Usage: /{command} <message>"
+channel_usage_message: "<red>Usage: /<command> <message>"
 
 #
 # Message sent when the player changes the main channel with /ch

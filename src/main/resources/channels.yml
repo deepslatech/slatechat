@@ -1,4 +1,4 @@
-#       SimplexChat by Luucx7 @ SagaciousDev
+#       SlateChat by Deepslate Studios
 #
 #            Channels configuration
 #
@@ -19,7 +19,7 @@ local:
     # Message format
     # You can use any PAPI placeholder here
     # Message is replaced on <message>
-    format: "&e[l] %luckperms_prefix% &e<player>&9&l> &e%luckperms_suffix%%chat_color%<message>"
+    format: "<yellow>[l] %luckperms_prefix% <yellow><player><blue><bold>> <yellow>%luckperms_suffix%%chat_color%<message>"
     # Channel command
     # Command used to send a message in the channel
     # Can also be used in the local channel.

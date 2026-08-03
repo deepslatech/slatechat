@@ -14,7 +14,7 @@ MineDown uses the syntax: `[Display Text](arguments)`
 - `[Click here](/kill)` - Shows "Click here" and hovering displays "/kill"
 - `[Visit](https://example.com)` - Shows "Visit" and hovering displays "https://example.com"
 
-**Custom Hover**: To use custom hover text instead of the automatic one, you need the permission `chat.minedown.customhover`:
+**Custom Hover**: To use custom hover text instead of the automatic one, you need the permission `chat.hover.bypass`:
 
 - With permission: `[Click here](/kill Execute the kill command)` - Shows custom hover "Execute the kill command"
 - Without permission: The custom text is ignored and the command "/kill" is shown in hover instead
@@ -49,7 +49,7 @@ MineDown uses the syntax: `[Display Text](arguments)`
 
 - Shows: "View rules"
 - Click: executes `/rules`
-- Hover: "Click to see server rules" (if player has `chat.minedown.customhover` permission)
+- Hover: "Click to see server rules" (if player has `chat.hover.bypass` permission)
 - Hover: "/rules" (if player does NOT have permission - automatic fallback)
 
 ### 4. Hover Only (no link)
@@ -67,6 +67,8 @@ MineDown uses the syntax: `[Display Text](arguments)`
 [Colored text](red)
 [Hex color text](#FF5733)
 ```
+
+**Requires `chat.colored`**: solid colors, gradients (#8), and rainbow (#9) are all silently ignored if the player doesn't have this permission — the text just falls back to whatever color already surrounds it. Links, hover, and plain formatting (bold/italic/underline/strikethrough/obfuscated) still work either way.
 
 ### 6. Formatting
 
@@ -98,6 +100,15 @@ MineDown uses the syntax: `[Display Text](arguments)`
 [Rainbow](rainbow)
 [Slow rainbow](rainbow:50)
 ```
+
+### 10. Escaping (show the raw syntax)
+
+```
+\[Click here](/kill)
+```
+
+- Shows: `[Click here](/kill)` as literal text — not clickable, not formatted
+- A backslash right before the `[` tells the plugin to skip the conversion for that pair, which is handy when you want to show someone how a MineDown link/format is written instead of triggering it.
 
 ## Processing Order
 
@@ -140,7 +151,7 @@ Result:
 ## Important Notes
 
 1. **Automatic Hover**: Links and commands always show hover text - either the link/command itself (automatic) or custom text with permission
-2. **Permission Required**: `chat.minedown.customhover` is needed to use custom hover text with links/commands
+2. **Permission Required**: `chat.hover.bypass` is needed to use custom hover text with links/commands
 3. Hover always appears **outside** of click (order: hover > click > formatting > color)
 4. Single quotes in hover text are automatically escaped
 5. Multiple spaces in arguments are preserved in hover text
@@ -148,4 +159,4 @@ Result:
 
 ## Permissions
 
-- `chat.minedown.customhover` - Allows players to set custom hover text for links and commands (without this, the link/command itself is shown in hover)
+- `chat.hover.bypass` - Allows players to set custom hover text for links and commands (without this, the link/command itself is shown in hover)

@@ -1,9 +1,9 @@
 name: ${project.name}
 version: ${project.version}
 api-version: 1.13
-main: me.luucx7.simplexchat.SimplexChat
-author: Luucx7
-website: github.com/Luucx7/simplexChat
+main: ch.deepslate.slatechat.SlateChat
+author: Deepslate Studios
+website: https://gitlab.com/deepslatech/slatechat
 depend: [PlaceholderAPI]
 softdepend: [DiscordSRV]
 commands:
@@ -11,4 +11,4 @@ commands:
         aliases: [channel, canal, canais]
     chatcor:
         aliases: [chatcolor, chatcor]
-    simplexchat:
+    slatechat:
