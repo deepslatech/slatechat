@@ -10,7 +10,7 @@
   <img alt="license" src="https://img.shields.io/badge/license-MIT-2c3598?style=for-the-badge&labelColor=1a1b26" />
 </a>
 
-📸 [Full showcase banner](public/image/banner.webp)
+📚 [Full documentation](https://deepslate.ch/docs/slatechat) &nbsp;•&nbsp; 📸 [Full showcase banner](public/image/banner.webp)
 
 </div>
 
