@@ -7,6 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!-- Project coordinates -->
+    <!-- Releases are built and published automatically by CI on version bumps -->
     <groupId>ch.deepslate.slatechat</groupId>
     <artifactId>SlateChat</artifactId>
     <version>1.0.0</version>
