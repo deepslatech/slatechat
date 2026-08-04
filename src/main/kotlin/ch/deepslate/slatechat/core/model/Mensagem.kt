@@ -116,9 +116,9 @@ class Mensagem(
                 val stripped = consoleFinal.replace(Regex("&[0-9a-fk-or]"), "")
                 Bukkit.getLogger().info(stripped)
 
-                // Send to DiscordSRV main channel if enabled explicitly to avoid duplicates
+                // Send to the DiscordSRV channel mapped to this SlateChat channel (if any) if enabled explicitly to avoid duplicates
                 if (SlateChat.isDiscordSRV && SlateChat.instance.config.getBoolean("modules.discordsrv_send", false)) {
-                    sendToDiscord(stripped)
+                    sendToDiscord(stripped, channel.name)
                 }
             }
 
@@ -225,17 +225,23 @@ class Mensagem(
         }
     }
 
-    private fun sendToDiscord(content: String) {
+    private fun sendToDiscord(content: String, channelName: String) {
         try {
             val cls = Class.forName("github.scarsz.discordsrv.DiscordSRV")
             val getPlugin = cls.getMethod("getPlugin")
             val discordSrv = getPlugin.invoke(null)
-            val mainChannelMethod = cls.getMethod("getMainTextChannel")
-            val mainChannel = mainChannelMethod.invoke(discordSrv)
-            if (mainChannel == null) return
 
-            val sendMethod = mainChannel.javaClass.getMethod("sendMessage", CharSequence::class.java)
-            val action = sendMethod.invoke(mainChannel, content)
+            // Only send if this in-game channel is explicitly mapped in DiscordSRV's
+            // config.yml "Channels" option, so channels left out of that map (e.g. "local")
+            // are never forwarded instead of always falling back to the main channel.
+            val destinationMethod = cls.getMethod(
+                "getDestinationTextChannelForGameChannelName",
+                String::class.java
+            )
+            val destinationChannel = destinationMethod.invoke(discordSrv, channelName) ?: return
+
+            val sendMethod = destinationChannel.javaClass.getMethod("sendMessage", CharSequence::class.java)
+            val action = sendMethod.invoke(destinationChannel, content)
             val queueMethod = action.javaClass.getMethod("queue")
             queueMethod.invoke(action)
         } catch (_: ClassNotFoundException) {

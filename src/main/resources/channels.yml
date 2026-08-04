@@ -19,7 +19,7 @@ local:
     # Message format
     # You can use any PAPI placeholder here
     # Message is replaced on <message>
-    format: "<yellow>[l] %luckperms_prefix% <yellow><player><blue><bold>> <yellow>%luckperms_suffix%%chat_color%<message>"
+    format: "<yellow>[Local] <yellow><player><blue><bold>> <yellow>%chat_color%<message>"
     # Channel command
     # Command used to send a message in the channel
     # Can also be used in the local channel.
@@ -47,7 +47,7 @@ local:
 # want to disable, just remove it from here.
 #
 global:
-    format: "&7[g] %luckperms_prefix% %clans_prefix%&7<player>&9&l> &7%chat_color%<message>"
+    format: "<gray>[Global] <gray><player><blue><bold>> <gray>%chat_color%<message>"
     command: "g"
     broadcast: true
     radius: 0

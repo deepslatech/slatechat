@@ -19,11 +19,8 @@ object FocusManager {
         val plugin: JavaPlugin = SlateChat.instance
         
         cmdManager = CommandManager(plugin, "ch").apply {
-            var aliases = listOf("channel", "canal", "canais")
-
             register(Ch())
             usage = Ch.getMessage("channel_command_usage")
-            aliases = aliases
         }
 
         loadWorldFocus()

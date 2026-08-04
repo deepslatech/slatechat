@@ -55,7 +55,7 @@ class SlateChat : JavaPlugin() {
         // Chat color module
         if (config.getBoolean("modules.chatcolor")) {
             colorsConfig = CustomConfigs.createCustomConfig("color")
-            getCommand("chatcor")?.setExecutor(Cores())
+            getCommand("chatcolor")?.setExecutor(Cores())
         }
 
         // Filter module
