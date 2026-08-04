@@ -1,0 +1,52 @@
+stages:
+  - release
+
+build-and-release:
+  stage: release
+  image: maven:3.9-eclipse-temurin-21
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - pom.xml
+  script:
+    - apt-get update -qq && apt-get install -y -qq curl jq > /dev/null
+
+    # Version lives in pom.xml; this job only runs when pom.xml changed on
+    # the default branch, so a bump here is what drives everything below.
+    - VERSION=$(mvn -q -Dexpression=project.version -DforceStdout help:evaluate)
+    - TAG="v${VERSION}"
+    - echo "pom.xml version is ${VERSION}, tag ${TAG}"
+
+    # If this version was already released (e.g. pom.xml changed for some
+    # other reason without a version bump), there's nothing to do.
+    - |
+      STATUS=$(curl -s -o /dev/null -w "%{http_code}" --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${TAG}")
+      if [ "$STATUS" = "200" ]; then
+        echo "Release ${TAG} already exists, nothing to do."
+        exit 0
+      fi
+
+    - mvn -B clean package
+    - cp target/SlateChat-*.jar target/SlateChat.jar
+
+    # Publish the jar to this project's Generic Package Registry - a
+    # permanent, versioned URL that release assets can point to.
+    - |
+      PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/slatechat/${VERSION}/SlateChat.jar"
+      curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+           --upload-file target/SlateChat.jar \
+           "${PACKAGE_URL}"
+
+    # Create the release (and its tag, since ${TAG} doesn't exist yet) with
+    # a fixed "filepath" so /-/releases/permalink/latest/downloads/SlateChat.jar
+    # always serves whatever the newest release is.
+    - |
+      curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --header "Content-Type: application/json" \
+           --data "$(jq -n \
+             --arg tag "$TAG" \
+             --arg desc "SlateChat ${VERSION}" \
+             --arg ref "$CI_COMMIT_SHA" \
+             --arg url "$PACKAGE_URL" \
+             '{tag_name: $tag, description: $desc, ref: $ref, assets: {links: [{name: "SlateChat.jar", url: $url, filepath: "/SlateChat.jar", link_type: "package"}]}}')" \
+           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"
