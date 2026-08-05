@@ -1,23 +1,36 @@
 stages:
+  - test
   - release
+
+# Build-only sanity check for feature branches / merge requests - lets you see
+# the Gradle build actually run in the runner before merging, without touching
+# releases (that stays master-only, see build-and-release below).
+verify-build:
+  stage: test
+  image: eclipse-temurin:21-jdk
+  rules:
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+  script:
+    - chmod +x gradlew
+    - ./gradlew --no-daemon clean build
 
 build-and-release:
   stage: release
-  image: maven:3.9-eclipse-temurin-21
+  image: eclipse-temurin:21-jdk
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       changes:
-        - pom.xml
+        - gradle.properties
   script:
     - apt-get update -qq && apt-get install -y -qq curl jq > /dev/null
 
-    # Version lives in pom.xml; this job only runs when pom.xml changed on
-    # the default branch, so a bump here is what drives everything below.
-    - VERSION=$(mvn -q -Dexpression=project.version -DforceStdout help:evaluate)
+    # Version lives in gradle.properties; this job only runs when gradle.properties
+    # changed on the default branch, so a bump here is what drives everything below.
+    - VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
     - TAG="v${VERSION}"
-    - echo "pom.xml version is ${VERSION}, tag ${TAG}"
+    - echo "gradle.properties version is ${VERSION}, tag ${TAG}"
 
-    # If this version was already released (e.g. pom.xml changed for some
+    # If this version was already released (e.g. gradle.properties changed for some
     # other reason without a version bump), there's nothing to do.
     - |
       STATUS=$(curl -s -o /dev/null -w "%{http_code}" --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
@@ -27,15 +40,16 @@ build-and-release:
         exit 0
       fi
 
-    - mvn -B clean package
-    - cp target/SlateChat-*.jar target/SlateChat.jar
+    - chmod +x gradlew
+    - ./gradlew --no-daemon clean build
+    - cp build/libs/SlateChat-*.jar build/libs/SlateChat.jar
 
     # Publish the jar to this project's Generic Package Registry - a
     # permanent, versioned URL that release assets can point to.
     - |
       PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/slatechat/${VERSION}/SlateChat.jar"
       curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-           --upload-file target/SlateChat.jar \
+           --upload-file build/libs/SlateChat.jar \
            "${PACKAGE_URL}"
 
     # Create the release (and its tag, since ${TAG} doesn't exist yet) with

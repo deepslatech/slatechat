@@ -61,7 +61,7 @@ class SlateCmd : CommandExecutor {
             }
             if (plugin.config.getBoolean("modules.chatcolor")) {
                 SlateChat.colorsConfig = CustomConfigs.createCustomConfig("color")
-                plugin.getCommand("chatcolor")?.setExecutor(Cores())
+                plugin.getCommand("chatcolor")?.setExecutor(ChatColorCommand())
             }
             if (plugin.config.getBoolean("modules.filter")) {
                 SlateChat.useFilter = true

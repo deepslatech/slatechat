@@ -2,7 +2,7 @@ package ch.deepslate.slatechat.commands
 
 import me.clip.placeholderapi.PlaceholderAPI
 import ch.deepslate.slatechat.SlateChat
-import ch.deepslate.slatechat.core.managers.JogadorManager
+import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import ch.deepslate.slatechat.core.model.MineDownConverter
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.command.Command
@@ -11,7 +11,7 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import java.util.regex.Pattern
 
-class Cores : CommandExecutor {
+class ChatColorCommand : CommandExecutor {
 
     private val mm = MiniMessage.miniMessage()
 
@@ -46,7 +46,7 @@ class Cores : CommandExecutor {
             return true
         }
 
-        val chatPlayer = JogadorManager.get(sender)
+        val chatPlayer = ChatPlayerManager.get(sender)
         val input = args[0]
 
         // Clear color (configurable keywords in color.yml)
