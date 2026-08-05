@@ -1,5 +1,18 @@
 stages:
+  - test
   - release
+
+# Build-only sanity check for feature branches / merge requests - lets you see
+# the Gradle build actually run in the runner before merging, without touching
+# releases (that stays master-only, see build-and-release below).
+verify-build:
+  stage: test
+  image: eclipse-temurin:21-jdk
+  rules:
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+  script:
+    - chmod +x gradlew
+    - ./gradlew --no-daemon clean build
 
 build-and-release:
   stage: release
