@@ -2,7 +2,6 @@ package ch.deepslate.slatechat.core.model.channels
 
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.api.Local
-import net.md_5.bungee.api.ChatColor
 import org.bukkit.configuration.file.FileConfiguration
 
 class LocalImpl : Local {
@@ -37,9 +36,8 @@ class LocalImpl : Local {
 
         command = config.getString("local.command") ?: "l"
 
-        format = ChatColor.translateAlternateColorCodes(
-            '&',
-            config.getString("local.format") ?: "<player>: <message>"
-        )
+        // Legacy '&'/'§' codes and MiniMessage tags are both resolved later by Message,
+        // which runs the full Adventure/MiniMessage conversion pipeline on the format.
+        format = config.getString("local.format") ?: "<player>: <message>"
     }
 }
