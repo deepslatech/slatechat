@@ -45,13 +45,13 @@ class ChannelCommand(private val commandName: String) : CommandExecutor {
             return true
         }
 
-        // Run message processing async
-        Bukkit.getScheduler().runTaskAsynchronously(SlateChat.instance, Runnable {
+        // Run message processing async (Paper's Folia-aware scheduler)
+        Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
             Message(sender, args.joinToString(" "), channel)
                 .validate()
                 .prepare()
                 .send()
-        })
+        }
 
         return true
     }

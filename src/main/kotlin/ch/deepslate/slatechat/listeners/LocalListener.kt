@@ -7,7 +7,6 @@ import ch.deepslate.slatechat.core.managers.MessageManager
 import ch.deepslate.slatechat.core.model.Message
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -48,7 +47,7 @@ class LocalListener : Listener {
             if (MessageManager.isSpam(args)) {
                 val msg = SlateChat.instance.config.getString("modules.chatformat.spam.message") ?: ""
                 player.sendMessage(mm.deserialize(msg))
-                Bukkit.getLogger().info("[SlateChat] Spam blocked from ${player.name}: $rawText")
+                SlateChat.instance.logger.info("Spam blocked from ${player.name}: $rawText")
                 event.isCancelled = true
                 return
             }
@@ -59,7 +58,7 @@ class LocalListener : Listener {
             if (MessageManager.isFlood(player, processedText)) {
                 val msg = SlateChat.instance.config.getString("modules.chatformat.flood.message") ?: ""
                 player.sendMessage(mm.deserialize(msg))
-                Bukkit.getLogger().info("[SlateChat] Flood blocked from ${player.name}: $processedText")
+                SlateChat.instance.logger.info("Flood blocked from ${player.name}: $processedText")
                 event.isCancelled = true
                 return
             }

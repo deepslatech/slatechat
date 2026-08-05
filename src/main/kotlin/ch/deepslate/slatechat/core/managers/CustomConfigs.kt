@@ -40,13 +40,14 @@ object CustomConfigs {
     fun saveCustomConfig(name: String, config: FileConfiguration) {
         val file = File(plugin.dataFolder, "$name.yml")
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, Runnable {
+        // Paper's Folia-aware scheduler
+        Bukkit.getAsyncScheduler().runNow(plugin) {
             try {
                 config.save(file)
             } catch (e: IOException) {
                 plugin.logger.severe("Failed to save $name.yml")
                 e.printStackTrace()
             }
-        })
+        }
     }
 }

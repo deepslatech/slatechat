@@ -75,8 +75,8 @@ class Message(
 
     /** Step 3 — send */
     fun send() {
-        // Main thread only for Bukkit actions
-        Bukkit.getScheduler().runTask(SlateChat.instance, Runnable {
+        // Global region thread only for Bukkit actions (Paper's Folia-aware scheduler)
+        Bukkit.getGlobalRegionScheduler().execute(SlateChat.instance) {
             // Strip styles (bold/italic/etc.) without wiping colors to preserve channel/chat colors
             val safeMessage = "<bold:false><italic:false><underlined:false><strikethrough:false><obfuscated:false>$message"
             val formatted = channel.format
@@ -114,7 +114,7 @@ class Message(
                 
                 // Strip color codes for cleaner console output
                 val stripped = consoleFinal.replace(Regex("&[0-9a-fk-or]"), "")
-                Bukkit.getLogger().info(stripped)
+                SlateChat.instance.logger.info(stripped)
 
                 // Send to the DiscordSRV channel mapped to this SlateChat channel (if any) if enabled explicitly to avoid duplicates
                 if (SlateChat.isDiscordSRV && SlateChat.instance.config.getBoolean("modules.discordsrv_send", false)) {
@@ -131,7 +131,7 @@ class Message(
                     .filter { it.location.distance(sender.location) <= radius }
                     .forEach { sendTo(it, component) }
             }
-        })
+        }
     }
     
     private fun convertHexToMiniMessage(text: String): String {
