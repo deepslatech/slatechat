@@ -1,6 +1,6 @@
 package ch.deepslate.slatechat
 
-import ch.deepslate.slatechat.commands.Cores
+import ch.deepslate.slatechat.commands.ChatColorCommand
 import ch.deepslate.slatechat.commands.SlateCmd
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.CustomConfigs
@@ -55,7 +55,7 @@ class SlateChat : JavaPlugin() {
         // Chat color module
         if (config.getBoolean("modules.chatcolor")) {
             colorsConfig = CustomConfigs.createCustomConfig("color")
-            getCommand("chatcolor")?.setExecutor(Cores())
+            getCommand("chatcolor")?.setExecutor(ChatColorCommand())
         }
 
         // Filter module

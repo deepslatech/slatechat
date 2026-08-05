@@ -12,7 +12,7 @@ object ChannelsManager {
 
     private val channels = ConcurrentHashMap<String, Channel>()
     private val commands = ConcurrentHashMap<String, CommandManager>()
-    val canaisCache: Map<Channel, String>
+    val channelsCache: Map<Channel, String>
         get() = channels.values.associateWith { it.command }
 
     private lateinit var _local: Local
