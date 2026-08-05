@@ -1,7 +1,7 @@
 package ch.deepslate.slatechat.listeners
 
 import ch.deepslate.slatechat.core.managers.FocusManager
-import ch.deepslate.slatechat.core.managers.JogadorManager
+import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerChangedWorldEvent
@@ -13,19 +13,19 @@ class ChatPlayerListener : Listener {
     @EventHandler
     fun onJoin(event: PlayerJoinEvent) {
         val player = event.player
-        val chatPlayer = JogadorManager.get(player)
+        val chatPlayer = ChatPlayerManager.get(player)
 
         // If the world has a forced channel, apply it
         FocusManager.focusWorlds[player.world.name]?.let { worldChannel ->
             chatPlayer.channel = worldChannel
         }
 
-        JogadorManager.add(chatPlayer)
+        ChatPlayerManager.add(chatPlayer)
     }
 
     @EventHandler
     fun onQuit(event: PlayerQuitEvent) {
-        JogadorManager.remove(event.player)
+        ChatPlayerManager.remove(event.player)
     }
 
     @EventHandler
@@ -34,7 +34,7 @@ class ChatPlayerListener : Listener {
 
         // Apply world channel automatically when changing worlds
         FocusManager.focusWorlds[player.world.name]?.let { worldChannel ->
-            JogadorManager.get(player).channel = worldChannel
+            ChatPlayerManager.get(player).channel = worldChannel
         }
     }
 }

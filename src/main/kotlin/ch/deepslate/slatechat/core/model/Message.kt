@@ -12,7 +12,7 @@ import java.util.regex.Pattern
 import java.util.regex.Matcher
 import ch.deepslate.slatechat.core.model.MineDownConverter
 
-class Mensagem(
+class Message(
     private val sender: Player,
     rawMessage: String,
     private val channel: Channel
@@ -27,7 +27,7 @@ class Mensagem(
     }
 
     /** Step 1 — validation (filter, caps, etc) */
-    fun validar(): Mensagem {
+    fun validate(): Message {
         if (!SlateChat.useFilter) return this
 
         val original = message
@@ -59,7 +59,7 @@ class Mensagem(
     }
 
     /** Step 2 — formatting + placeholders */
-    fun preparar(): Mensagem {
+    fun prepare(): Message {
         if (!sender.hasPermission("chat.colored")) {
             message = stripColorCodes(message)
         }
@@ -74,7 +74,7 @@ class Mensagem(
     }
 
     /** Step 3 — send */
-    fun enviar() {
+    fun send() {
         // Main thread only for Bukkit actions
         Bukkit.getScheduler().runTask(SlateChat.instance, Runnable {
             // Strip styles (bold/italic/etc.) without wiping colors to preserve channel/chat colors

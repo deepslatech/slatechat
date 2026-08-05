@@ -3,7 +3,7 @@ package ch.deepslate.slatechat.commands
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.api.Channel
 import ch.deepslate.slatechat.core.managers.ChannelsManager
-import ch.deepslate.slatechat.core.managers.JogadorManager
+import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
@@ -32,7 +32,7 @@ class Ch : CommandExecutor, TabCompleter {
             return true
         }
 
-        val channel = ChannelsManager.canaisCache.keys.firstOrNull {
+        val channel = ChannelsManager.channelsCache.keys.firstOrNull {
             it.name.equals(args[0], true) || it.command.equals(args[0], true)
         }
 
@@ -42,7 +42,7 @@ class Ch : CommandExecutor, TabCompleter {
             return true
         }
 
-        JogadorManager.get(sender).channel = channel
+        ChatPlayerManager.get(sender).channel = channel
 
         val message = SlateChat.instance.config.getString("channel_changed")!!
             .replace("<channelName>", channel.name)
@@ -59,7 +59,7 @@ class Ch : CommandExecutor, TabCompleter {
         args: Array<out String>
     ): List<String> {
 
-        val channels = ChannelsManager.canaisCache.keys
+        val channels = ChannelsManager.channelsCache.keys
             .filter {
                 !it.restrict || it.permission?.let { perm -> sender.hasPermission(perm) } == true
             }

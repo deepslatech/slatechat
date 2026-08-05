@@ -2,7 +2,7 @@ package ch.deepslate.slatechat.commands
 
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.managers.ChannelsManager
-import ch.deepslate.slatechat.core.model.Mensagem
+import ch.deepslate.slatechat.core.model.Message
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.command.Command
@@ -26,7 +26,7 @@ class ChannelCommand(private val commandName: String) : CommandExecutor {
             return true
         }
 
-        val channel = ChannelsManager.canaisCache.keys
+        val channel = ChannelsManager.channelsCache.keys
             .firstOrNull { it.command.equals(commandName, true) }
             ?: return true
 
@@ -47,10 +47,10 @@ class ChannelCommand(private val commandName: String) : CommandExecutor {
 
         // Run message processing async
         Bukkit.getScheduler().runTaskAsynchronously(SlateChat.instance, Runnable {
-            Mensagem(sender, args.joinToString(" "), channel)
-                .validar()
-                .preparar()
-                .enviar()
+            Message(sender, args.joinToString(" "), channel)
+                .validate()
+                .prepare()
+                .send()
         })
 
         return true

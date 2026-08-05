@@ -2,9 +2,9 @@ package ch.deepslate.slatechat.listeners
 
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.managers.ChannelsManager
-import ch.deepslate.slatechat.core.managers.JogadorManager
+import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import ch.deepslate.slatechat.core.managers.MessageManager
-import ch.deepslate.slatechat.core.model.Mensagem
+import ch.deepslate.slatechat.core.model.Message
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Bukkit
@@ -70,7 +70,7 @@ class LocalListener : Listener {
 
         // If focus module is enabled, use player's focused channel
         if (SlateChat.instance.config.getBoolean("modules.focus")) {
-            JogadorManager.get(player).channel?.let {
+            ChatPlayerManager.get(player).channel?.let {
                 channel = it
             }
         }
@@ -83,10 +83,10 @@ class LocalListener : Listener {
         }
 
         // Process message through your system
-        Mensagem(player, processedText, channel)
-            .validar()
-            .preparar()
-            .enviar()
+        Message(player, processedText, channel)
+            .validate()
+            .prepare()
+            .send()
 
         // Track last message for flood detection
         MessageManager.setLastMessage(player, processedText)

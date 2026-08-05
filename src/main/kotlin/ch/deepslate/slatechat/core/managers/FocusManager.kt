@@ -36,7 +36,7 @@ object FocusManager {
             val world = parts[0]
             val channelName = parts[1]
 
-            val channel = ChannelsManager.canaisCache.keys
+            val channel = ChannelsManager.channelsCache.keys
                 .firstOrNull { it.name.equals(channelName, ignoreCase = true) }
                 ?: return@forEach
 

@@ -193,15 +193,14 @@ git clone https://gitlab.com/deepslatech/slatechat.git
 cd slatechat
 
 # Build the plugin jar
-mvn clean package
+./gradlew build
 
-# The shaded jar will be at target/SlateChat-<version>.jar
+# The shaded jar will be at build/libs/SlateChat-<version>.jar
 ```
 
 ### Requirements
 
-- **Java 21** to build (matches the `1.21.1` Paper API target — running the resulting jar on a Minecraft 26.1+ server requires that server to run on Java 25, see [Compatibility](#-compatibility))
-- **Maven**
+- **Java 21** to build (matches the `1.21.1` Paper API target — running the resulting jar on a Minecraft 26.1+ server requires that server to run on Java 25, see [Compatibility](#-compatibility)). No local Gradle install needed — the wrapper (`gradlew`) handles that.
 - **Paper** 1.21.1 through 26.2 (or compatible fork) — see [Compatibility](#-compatibility)
 - **[PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI)** — required dependency
 - **[DiscordSRV](https://github.com/DiscordSRV/DiscordSRV)** — optional, only needed for the Discord bridge

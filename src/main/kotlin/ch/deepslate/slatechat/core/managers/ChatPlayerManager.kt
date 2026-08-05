@@ -1,18 +1,18 @@
 package ch.deepslate.slatechat.core.managers
 
 import ch.deepslate.slatechat.core.api.ChatPlayer
-import ch.deepslate.slatechat.core.model.Jogador
+import ch.deepslate.slatechat.core.model.ChatPlayerImpl
 import org.bukkit.entity.Player
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-object JogadorManager {
+object ChatPlayerManager {
 
     private val chatPlayers: MutableMap<UUID, ChatPlayer> = ConcurrentHashMap()
 
     fun get(player: Player): ChatPlayer {
         return chatPlayers.computeIfAbsent(player.uniqueId) {
-            Jogador(player)
+            ChatPlayerImpl(player)
         }
     }
 
