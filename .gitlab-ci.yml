@@ -52,6 +52,21 @@ build-and-release:
            --upload-file build/libs/SlateChat.jar \
            "${PACKAGE_URL}"
 
+    # Pull the "## [$VERSION]" section out of CHANGELOG.md to use as the
+    # release description/patch notes, instead of a bare "SlateChat x.y.z"
+    # with no actual notes. Falls back to that bare string if CHANGELOG.md
+    # is missing a section for this version, so a forgotten changelog entry
+    # doesn't break the release.
+    - |
+      DESC=$(awk -v ver="$VERSION" '
+        /^## \[/ { if (found) exit; if (index($0, "[" ver "]")) { found=1; next } }
+        found { print }
+      ' CHANGELOG.md | sed -e '/./,$!d' -e ':a' -e '/^\n*$/{$d;N;ba' -e '}')
+      if [ -z "$DESC" ]; then
+        echo "No CHANGELOG.md section found for ${VERSION}, falling back to a bare description."
+        DESC="SlateChat ${VERSION}"
+      fi
+
     # Create the release (and its tag, since ${TAG} doesn't exist yet) with
     # a fixed "filepath" so /-/releases/permalink/latest/downloads/SlateChat.jar
     # always serves whatever the newest release is.
@@ -59,7 +74,7 @@ build-and-release:
       curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --header "Content-Type: application/json" \
            --data "$(jq -n \
              --arg tag "$TAG" \
-             --arg desc "SlateChat ${VERSION}" \
+             --arg desc "$DESC" \
              --arg ref "$CI_COMMIT_SHA" \
              --arg url "$PACKAGE_URL" \
              '{tag_name: $tag, description: $desc, ref: $ref, assets: {links: [{name: "SlateChat.jar", url: $url, filepath: "/SlateChat.jar", link_type: "package"}]}}')" \

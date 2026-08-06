@@ -2,9 +2,11 @@
 
 SlateChat accepts **two** formatting syntaxes at the same time, in every channel format, chat message (with `chat.colored`), and plugin message: **MineDown** (`[Text](args)`) and **MiniMessage** (`<tag>text</tag>`). They're independent — use whichever fits, or mix both in the same string.
 
-Legacy `&`/`§` codes and raw HEX (`#RRGGBB`) are also converted automatically wherever the plugin renders text (see [`Colors.md`](Colors.md) for the full legacy code table).
+Legacy `&`/`§` codes and raw HEX (`#RRGGBB`) are also converted automatically wherever the plugin renders text (see [`colors.md`](colors.md) for the full legacy code table).
 
 If [ItemsAdder](https://itemsadder.com/) is installed, its `:name:` font images (emoji, rank badges, custom icons) are resolved too — see [ItemsAdder Compatibility](#itemsadder-compatibility) below.
+
+> **Building a `channels.yml` format?** This page covers everyday chat syntax. Shadow color, transition, pride, and raw MiniMessage tags like keybind/insert/NBT live in [`formatting-advanced.md`](formatting-advanced.md).
 
 ---
 
@@ -20,7 +22,7 @@ MiniMessage is Adventure's tag-based format: `<tag>content</tag>`. It's what cha
 <#FF5733>Custom hex color</#FF5733>
 ```
 
-Named colors match the standard 16 Minecraft colors (`<black>`, `<dark_blue>`, `<dark_green>`, `<dark_aqua>`, `<dark_red>`, `<dark_purple>`, `<gold>`, `<gray>`, `<dark_gray>`, `<blue>`, `<green>`, `<aqua>`, `<red>`, `<light_purple>`, `<yellow>`, `<white>`) — see [`Colors.md`](Colors.md).
+Named colors match the standard 16 Minecraft colors (`<black>`, `<dark_blue>`, `<dark_green>`, `<dark_aqua>`, `<dark_red>`, `<dark_purple>`, `<gold>`, `<gray>`, `<dark_gray>`, `<blue>`, `<green>`, `<aqua>`, `<red>`, `<light_purple>`, `<yellow>`, `<white>`) — see [`colors.md`](colors.md).
 
 ### Formatting
 
@@ -66,7 +68,7 @@ PlaceholderAPI is resolved **before** MiniMessage parsing, so placeholders can s
 
 ### Permission gating
 
-Just like MineDown, color/gradient/rainbow tags typed by a player (e.g. via `/chatcolor`) are stripped if they lack `chat.colored`. MiniMessage baked directly into `channels.yml` formats is config, not player input, so it always renders regardless of permission.
+Color/gradient/rainbow tags typed by a player (e.g. via `/chatcolor`) are stripped if they lack `chat.colored` — this applies to both MineDown args *and* raw MiniMessage tags typed straight into chat. MiniMessage baked directly into `channels.yml` formats is config, not player input, so it always renders regardless of permission. See [`permissions.md`](permissions.md) for the full node list.
 
 ---
 
@@ -243,7 +245,7 @@ This is resolved through ItemsAdder's own API (`FontImageWrapper.replaceFontImag
 
 ---
 
-## Permissions
+## Next steps
 
-- `chat.colored` — Required for colors, HEX, gradients, and rainbow (both MineDown args and legacy/HEX codes typed by a player). Plain formatting (bold/italic/underline/strikethrough/obfuscated) and links/hover work regardless.
-- `chat.hover.bypass` — Allows players to set custom hover text for MineDown links and commands (without this, the link/command itself is shown in hover).
+- [`formatting-advanced.md`](formatting-advanced.md) — shadow color, transition, pride, and raw MiniMessage tags (keybind, insert, NBT, and more) for channel formats.
+- [`permissions.md`](permissions.md) — every permission node SlateChat checks, in one place.

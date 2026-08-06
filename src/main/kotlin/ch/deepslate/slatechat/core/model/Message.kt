@@ -6,6 +6,8 @@ import ch.deepslate.slatechat.core.api.Channel
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.permissions.Permissible
@@ -25,6 +27,60 @@ class Message(
     companion object {
         private val HEX_PATTERN: Pattern = Pattern.compile("#([0-9a-fA-F]{6})")
         private val LEGACY_CODE_PATTERN: Pattern = Pattern.compile("[&§][0-9A-Fa-fK-Ok-oRr]")
+
+        // Splits a string into alternating <...> tag chunks and plain-text chunks, so
+        // convertHexToMiniMessage can leave already-tagged content (e.g. a gradient's own
+        // hex color arguments) untouched and only rewrite bare hex in plain text.
+        private val TAG_OR_TEXT_PATTERN: Pattern = Pattern.compile("<[^<>]*>|[^<>]+")
+
+        // Names of every MiniMessage tag that produces a *color* effect (solid colors, hex,
+        // gradient/rainbow/shadow/transition/pride). Used to strip raw tags a player without
+        // chat.colored types directly -- MineDownConverter already gates [text](args) syntax,
+        // but a raw <red>/<gradient:...>/<shadow:...> tag used to sail straight through to
+        // mm.deserialize() untouched. Formatting (bold/italic/...), click, hover, keybind,
+        // insert, font, lang and head are NOT color tags and stay ungated here on purpose --
+        // see docs/permissions.md.
+        private val COLOR_TAG_NAMES = listOf(
+            "black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple",
+            "gold", "gray", "dark_gray", "blue", "green", "aqua", "red", "light_purple",
+            "yellow", "white",
+            "color", "colour", "c",
+            "gradient", "rainbow",
+            "shadow",
+            "transition", "pride"
+        )
+        // "!" is matched alongside "/" so <!shadow> (Adventure's own alias for disabling the
+        // shadow, distinct from a closing </shadow> tag) doesn't sail through ungated.
+        private val MINIMESSAGE_COLOR_TAG_PATTERN: Pattern = Pattern.compile(
+            "<[/!]?(?:" + COLOR_TAG_NAMES.joinToString("|") + ")(:[^<>]*)?>|<[/!]?#[0-9a-fA-F]{3,8}>",
+            Pattern.CASE_INSENSITIVE
+        )
+
+        // Cosmetic tags: purely client-rendered convenience/decoration, no server-state
+        // leak -- gated behind chat.cosmetic rather than chat.colored since they're not
+        // color effects. Includes documented aliases (tr/translate, tr_or/translate_or).
+        private val COSMETIC_TAG_NAMES = listOf(
+            "key",
+            "insert",
+            "font",
+            "lang", "lang_or", "tr", "tr_or", "translate", "translate_or",
+            "head", "sprite"
+        )
+        private val MINIMESSAGE_COSMETIC_TAG_PATTERN: Pattern = Pattern.compile(
+            "</?(?:" + COSMETIC_TAG_NAMES.joinToString("|") + ")(:[^<>]*)?>",
+            Pattern.CASE_INSENSITIVE
+        )
+
+        // Advanced/data tags: resolved server-side and can expose entity/block/scoreboard
+        // state to whoever reads the message (the same reason vanilla restricts raw JSON
+        // text components like these to permission level 2+). Gated behind chat.advanced,
+        // which -- like chat.reload/chat.update -- has no permissions: entry in plugin.yml,
+        // so it defaults to OP-only until a permission plugin grants it.
+        private val ADVANCED_TAG_NAMES = listOf("selector", "sel", "score", "nbt", "data")
+        private val MINIMESSAGE_ADVANCED_TAG_PATTERN: Pattern = Pattern.compile(
+            "</?(?:" + ADVANCED_TAG_NAMES.joinToString("|") + ")(:[^<>]*)?>",
+            Pattern.CASE_INSENSITIVE
+        )
     }
 
     /** Step 1 — validation (filter, caps, etc) */
@@ -64,14 +120,27 @@ class Message(
         if (!sender.hasPermission("chat.colored")) {
             message = stripColorCodes(message)
         }
+        if (!sender.hasPermission("chat.cosmetic")) {
+            message = MINIMESSAGE_COSMETIC_TAG_PATTERN.matcher(message).replaceAll("")
+        }
+        if (!sender.hasPermission("chat.advanced")) {
+            message = MINIMESSAGE_ADVANCED_TAG_PATTERN.matcher(message).replaceAll("")
+        }
         message = PlaceholderAPI.setPlaceholders(sender, message)
         return this
     }
 
-    /** Removes raw legacy (&c) and HEX (#RRGGBB) color codes typed by the player */
+    /**
+     * Removes raw legacy (&c), HEX (#RRGGBB), and raw MiniMessage color-family tags
+     * (<red>, <gradient:...>, <rainbow>, <shadow:...>, <transition:...>, <pride:...>, <#fff>)
+     * typed by the player. MineDownConverter already gates its own [text](args) syntax on
+     * chat.colored, but a player typing MiniMessage tags directly used to skip that check
+     * entirely and sail through to mm.deserialize() untouched -- this closes that gap.
+     */
     private fun stripColorCodes(text: String): String {
         val withoutHex = HEX_PATTERN.matcher(text).replaceAll("")
-        return LEGACY_CODE_PATTERN.matcher(withoutHex).replaceAll("")
+        val withoutLegacy = LEGACY_CODE_PATTERN.matcher(withoutHex).replaceAll("")
+        return MINIMESSAGE_COLOR_TAG_PATTERN.matcher(withoutLegacy).replaceAll("")
     }
 
     /** Step 3 — send */
@@ -100,43 +169,111 @@ class Message(
             withPlaceholders = convertLegacyToMiniMessage(withPlaceholders)
             // Now deserialize with MiniMessage (all tags are MiniMessage format)
             val component = mm.deserialize(withPlaceholders)
+            // <selector>/<score>/<nbt> come out of deserialize() as real components, but per
+            // Adventure's own docs they're "rendered serverside" against "platform-defined
+            // context" -- sent as-is via a plain Audience#sendMessage(), a client just falls
+            // back to showing the literal pattern (e.g. "@e[limit=5]") instead of resolved
+            // names, because nothing ever told the platform who/where to resolve against. This
+            // resolves them against the message's sender before anything goes out.
+            val resolvedComponent = resolveSelectorsAndScores(component)
+
+            // Verbose diagnostic logging -- off by default, noisy (dumps the full component tree
+            // as JSON for every message). Toggle with `debug: true` in config.yml.
+            if (SlateChat.instance.config.getBoolean("debug", false)) {
+                SlateChat.instance.logger.info(
+                    "[DEBUG] withPlaceholders=$withPlaceholders | gson=" +
+                        GsonComponentSerializer.gson().serialize(resolvedComponent)
+                )
+            }
 
             // Log to console if enabled
             if (SlateChat.instance.config.getBoolean("log_to_console", true)) {
-                val consoleFormat = SlateChat.instance.config.getString("console_log") 
+                val consoleFormat = SlateChat.instance.config.getString("console_log")
                     ?: "[<channel>] <player>: <message>"
-                
+
                 val consoleMsg = consoleFormat
                     .replace("<channel>", channel.name)
                     .replace("<channelCmd>", channel.command)
                     .replace("<player>", sender.name)
                     .replace("<message>", message)
-                
+
                 // Apply PlaceholderAPI for console log
                 val consoleFinal = PlaceholderAPI.setPlaceholders(sender, consoleMsg)
-                
-                // Strip color codes for cleaner console output
-                val stripped = consoleFinal.replace(Regex("&[0-9a-fk-or]"), "")
-                SlateChat.instance.logger.info(stripped)
+
+                // Same conversions the chat message itself gets, so &codes/#hex/raw MiniMessage
+                // tags in console_log or the player's message render consistently here too,
+                // instead of only legacy codes being stripped like before.
+                val consoleMiniMessage = convertLegacyToMiniMessage(convertHexToMiniMessage(consoleFinal))
+                val consoleComponent = mm.deserialize(consoleMiniMessage)
+                // Hover/click never reach the console either way: PlainTextComponentSerializer
+                // only extracts visible text, and ComponentLogger doesn't render interactive
+                // metadata to a terminal -- so there's nothing extra to gate for those specifically.
+                val plainConsoleMsg = PlainTextComponentSerializer.plainText().serialize(consoleComponent)
+
+                if (SlateChat.instance.config.getBoolean("console_format_colors", false)) {
+                    // Real ANSI colors in the console/log file (auto-disabled if the terminal
+                    // doesn't support it, e.g. output redirected to a file).
+                    SlateChat.instance.componentLogger.info(consoleComponent)
+                } else {
+                    SlateChat.instance.logger.info(plainConsoleMsg)
+                }
 
                 // Send to the DiscordSRV channel mapped to this SlateChat channel (if any) if enabled explicitly to avoid duplicates
                 if (SlateChat.isDiscordSRV && SlateChat.instance.config.getBoolean("modules.discordsrv_send", false)) {
-                    sendToDiscord(stripped, channel.name)
+                    sendToDiscord(plainConsoleMsg, channel.name)
                 }
             }
 
             if (channel.broadcast) {
-                Bukkit.getOnlinePlayers().forEach { sendTo(it, component) }
+                Bukkit.getOnlinePlayers().forEach { sendTo(it, resolvedComponent) }
             } else {
                 val radius = channel.radius
                 Bukkit.getOnlinePlayers()
                     .filter { it.world == sender.world }
                     .filter { it.location.distance(sender.location) <= radius }
-                    .forEach { sendTo(it, component) }
+                    .forEach { sendTo(it, resolvedComponent) }
             }
         }
     }
     
+    /**
+     * Resolves <selector>/<score>/<nbt> components against the message sender, via Paper's
+     * `PaperComponents.resolveWithContext(component, sender, sender, bypassPermissions)`.
+     * Without this, those components reach the client unresolved -- Adventure's own docs note
+     * they're "rendered serverside" against "platform-defined context", and a plain
+     * Audience#sendMessage() never supplies one, so the client just shows the literal pattern
+     * (e.g. "@e[limit=5]") instead of resolved names.
+     *
+     * `bypassPermissions=true` because chat.advanced is SlateChat's own gate for these tags
+     * (see prepare()) -- we don't want Paper's internal op-level selector check adding a second,
+     * conflicting gate that only true server operators could ever pass, defeating the point of
+     * being able to grant chat.advanced to non-op staff via a permissions plugin.
+     *
+     * Uses reflection because `PaperComponents` only exists from Paper 1.21.4 onward (our
+     * compileOnly target is 1.21.1) -- on an older server this just no-ops and the component
+     * goes out unresolved, same as before.
+     */
+    private fun resolveSelectorsAndScores(input: Component): Component {
+        return try {
+            val cls = Class.forName("io.papermc.paper.text.PaperComponents")
+            val resolveWithContext = cls.getMethod(
+                "resolveWithContext",
+                Component::class.java,
+                org.bukkit.command.CommandSender::class.java,
+                org.bukkit.entity.Entity::class.java,
+                Boolean::class.javaPrimitiveType
+            )
+            resolveWithContext.invoke(null, input, sender, sender, true) as Component
+        } catch (_: ClassNotFoundException) {
+            // Paper < 1.21.4 -- selector/score/nbt just won't resolve to live values there
+            input
+        } catch (_: Exception) {
+            // Resolution failure (bad selector syntax, IOException, etc.) -- fall back to the
+            // unresolved component rather than breaking the whole message
+            input
+        }
+    }
+
     /**
      * Resolves ItemsAdder's `:emoji_name:` font-image shorthand into the actual rendered
      * text, respecting each font image's own permission (via ItemsAdder's own API).
@@ -162,18 +299,35 @@ class Message(
         }
     }
 
+    /**
+     * Converts bare #RRGGBB literals in plain text into <#RRGGBB> MiniMessage tags.
+     * Deliberately skips anything already inside a <...> tag -- otherwise a color
+     * argument that's already hex, like <gradient:#FF0000:#0000FF> or a MineDown-generated
+     * gradient/shadow, gets rewritten into <gradient:<#FF0000>:<#0000FF>>, which isn't a
+     * valid color argument and makes MiniMessage fall back to raw, unparsed text.
+     */
     private fun convertHexToMiniMessage(text: String): String {
-        val matcher = HEX_PATTERN.matcher(text)
-        val buffer = StringBuffer()
-        
-        while (matcher.find()) {
-            val hexCode = matcher.group(1)
-            val miniHex = "<#$hexCode>"
-            matcher.appendReplacement(buffer, Matcher.quoteReplacement(miniHex))
+        val tagOrText = TAG_OR_TEXT_PATTERN.matcher(text)
+        val result = StringBuilder()
+
+        while (tagOrText.find()) {
+            val chunk = tagOrText.group()
+            if (chunk.startsWith("<")) {
+                result.append(chunk)
+                continue
+            }
+
+            val matcher = HEX_PATTERN.matcher(chunk)
+            val buffer = StringBuffer()
+            while (matcher.find()) {
+                val hexCode = matcher.group(1)
+                matcher.appendReplacement(buffer, Matcher.quoteReplacement("<#$hexCode>"))
+            }
+            matcher.appendTail(buffer)
+            result.append(buffer)
         }
-        
-        matcher.appendTail(buffer)
-        return buffer.toString()
+
+        return result.toString()
     }
 
     private fun convertBreaks(text: String): String {

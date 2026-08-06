@@ -1,6 +1,6 @@
 # Colors Reference
 
-The 16 standard Minecraft legacy colors, usable anywhere SlateChat accepts color input — legacy codes (`&e`), MiniMessage tags (`<yellow>`), or MineDown args (`[Text](yellow)`). All require `chat.colored` when typed by a player; see [`Syntax.md`](Syntax.md).
+The 16 standard Minecraft legacy colors, usable anywhere SlateChat accepts color input — legacy codes (`&e`), MiniMessage tags (`<yellow>`), or MineDown args (`[Text](yellow)`). All require `chat.colored` when typed by a player; see [`formatting.md`](formatting.md).
 
 | Color         | Name          | Chat code | Hex code  |
 | ------------- | ------------- | :-------: | --------- |
@@ -42,3 +42,5 @@ The 16 standard Minecraft legacy colors, usable anywhere SlateChat accepts color
 | Reset          | `&r`        | `<reset>`             |
 
 > HEX colors (`#RRGGBB`) and gradients are only available via MiniMessage (`<#RRGGBB>`, `<gradient:#A-#B>`) or MineDown (`#RRGGBB`, `#RRGGBB-#RRGGBB`) — there's no legacy equivalent, since vanilla legacy codes only cover the 16 colors above.
+
+> The same names/hex values also work as the color argument for `<shadow:...>` (text shadow color) — see [`formatting-advanced.md`](formatting-advanced.md#shadow-color).

@@ -85,6 +85,22 @@ log_to_console: true
 console_log: "[<channel>] <player>> <message>"
 
 #
+# If true, colors/formatting render as real ANSI escape codes in the console
+# (and log file) instead of plain text -- same MiniMessage tags as the chat
+# message, just rendered for a terminal instead of a client. Automatically
+# falls back to plain text if the terminal/log target doesn't support ANSI.
+# Hover/click text never shows up in console either way, on or off.
+#
+console_format_colors: false
+
+#
+# Verbose diagnostic logging -- logs the fully processed message string plus
+# the raw JSON of the component sent to players, for every single chat
+# message. Noisy; only turn on while troubleshooting a rendering issue.
+#
+debug: false
+
+#
 # Enable or disable plugin components here
 # Every module have its own configuration file
 # so you will not get distracted with useless or unrelated

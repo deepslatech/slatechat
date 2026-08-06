@@ -73,6 +73,10 @@ object MineDownConverter {
                     val duration = part.substringAfter(":").toIntOrNull() ?: 20
                     formatting.add("rainbow:$duration")
                 }
+                // Shadow color: shadow:#fff or shadow:yellow or shadow:yellow:0.5 (alpha)
+                part.startsWith("shadow:", ignoreCase = true) -> {
+                    formatting.add("shadow:" + part.substringAfter(":"))
+                }
                 // URL
                 part.startsWith("http://") || part.startsWith("https://") -> {
                     link = part
@@ -159,6 +163,12 @@ object MineDownConverter {
                         "<rainbow:$duration>$result</rainbow>"
                     } else {
                         "<rainbow>$result</rainbow>"
+                    }
+                } else if (fmt.startsWith("shadow:")) {
+                    if (!canColor) {
+                        result
+                    } else {
+                        "<shadow:${fmt.substringAfter("shadow:")}>$result</shadow>"
                     }
                 } else {
                     result

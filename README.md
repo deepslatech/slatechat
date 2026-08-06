@@ -16,10 +16,6 @@
 
 ---
 
-[[_TOC_]]
-
----
-
 ### ⚠️ IMPORTANT!
 
 > [!WARNING]
@@ -30,144 +26,9 @@
 
 ## 📌 Overview
 
-**SlateChat** replaces vanilla chat with a channel-based system driven by simple, per-channel YAML formats. Every channel supports full [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) expansion, MineDown-style links/hover/gradients rendered through Adventure's MiniMessage, and legacy `&`/`§` codes for drop-in compatibility with existing configs — see [`Syntax.md`](Syntax.md) and [`Colors.md`](Colors.md).
+**SlateChat** replaces vanilla chat with a channel-based system driven by simple, per-channel YAML formats — local (radius/world) and global channels out of the box, plus your own custom ones. On top of chat routing it ships optional modules for per-player chat colors, a chat "focus" system, word filtering, spam & flood protection, a one-way DiscordSRV bridge, and ItemsAdder compatibility, each toggled independently.
 
-On top of chat routing, it ships optional modules for per-player chat colors, a chat "focus" system, word filtering/replacement, spam & flood protection, a one-way bridge to DiscordSRV, and ItemsAdder compatibility — each toggled independently so you only configure what you actually use.
-
----
-
-## ✨ Features
-
-- **Channel system** — ships with `local` (radius or world-based) and `global` (broadcast) channels out of the box; add as many custom channels as you want in `channels.yml`.
-- **Per-player chat color** — `/chatcolor` lets players pick a legacy or HEX/RGB color for their messages, with configurable clear keywords and an `enable_rgb` toggle.
-- **MineDown + MiniMessage rendering** — `[Click here](/warp spawn Teleport to spawn)` syntax for clickable/hoverable links and commands, HEX colors (`#FF5733`), gradients, and rainbow text. See [`Syntax.md`](Syntax.md) for the full syntax guide and [`Colors.md`](Colors.md) for the color reference.
-- **Chat focus** — players can lock themselves to a default channel, with optional forced-focus per world.
-- **Chat filter** — censor blocked words (replaced with asterisks) or auto-replace specific words, case-insensitive.
-- **Spam & flood protection** — block messages with excessive repeated characters or repeated consecutive messages.
-- **Action bar read receipts** — senders see how many nearby/online players actually received their message.
-- **DiscordSRV bridge** — optionally forward console-logged chat to Discord, per-channel: each SlateChat channel is only sent if it's mapped in DiscordSRV's own `Channels` config option, so you pick exactly which channel(s) get relayed (off by default to avoid duplicate messages if DiscordSRV already relays chat itself).
-- **ItemsAdder compatible** — ItemsAdder's `:name:` font images (emoji, rank/prefix badges, custom icons) resolve automatically wherever SlateChat renders text — chat, channel formats, even a `%luckperms_prefix%` set to one — respecting each font image's own permission. Detected automatically if ItemsAdder is installed, no extra setup needed.
-- **Full PlaceholderAPI support** — usable in channel formats, console log format, and every player-facing message.
-- **Update checker** — checks GitLab on startup for a newer release; logs to console and notifies admins with `chat.update` in chat. Async, fail-silent, off with one config flag.
-
----
-
-## 🔤 Placeholders
-
-Exposed under the `chat` identifier (`%chat_<placeholder>%`):
-
-| Placeholder     | Description                                                  |
-| ---------------- | ------------------------------------------------------------- |
-| `%chat_color%`   | The player's currently selected chat color (legacy/HEX code). |
-| `%chat_channel%` | The display name of the player's currently focused channel.   |
-
----
-
-## 📋 Permissions
-
-| Permission                  | Description                                                                                                                   |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `chat.setcolor`             | Allows the player to use `/chatcolor` and change their chat color. The player still needs `chat.colored` for colors to apply. |
-| `chat.colored`               | Allows the player to use color in chat — legacy (`&6`), HEX (`#RRGGBB`), and MineDown color/gradient/rainbow args. Without it, no color is applied anywhere (raw codes are stripped, MineDown color args are silently ignored) and `/chatcolor` refuses to set one. |
-| `chat.count.bypass`          | Player is excluded from the actionbar receivers count. Useful for vanished admins.                                            |
-| `chat.hover.bypass`         | Allows custom hover text in MineDown links/commands. Without this, hover shows the link/command itself automatically.         |
-| `chat.reload`                | Allows the admins to reload the plugin with `/slatechat reload`.                                                              |
-| `chat.update`                 | Get notified in chat on join if a newer SlateChat version is available (also always logged to console regardless of this permission). |
-| `chat.local`                 | Permission to use the local channel (if `restrict: true` in `channels.yml`).                                                  |
-| `chat.global`                | Permission to use the global channel (if `restrict: true` in `channels.yml`).                                                 |
-
-> **Note:** Channel permissions (`chat.local`, `chat.global`, etc.) are configurable per channel in `channels.yml`. Set `restrict: true` and define the `permission` node to enable permission checks.
-
----
-
-## ⌨️ Commands
-
-No built-in aliases — server aliases are already configurable per-server, so SlateChat ships with just the plain command name and lets you set your own on top if you want one.
-
-| Command                    | Description                                      |
-| --------------------------- | ------------------------------------------------- |
-| `/ch <channel>`            | Switch your active chat channel.                  |
-| `/chatcolor <color\|clear>` | Set or clear your personal chat color.            |
-| `/slatechat`               | Show the running plugin version.                  |
-| `/slatechat reload`        | Reload configs and modules (`chat.reload`).        |
-| `/slatechat update`        | Check for a newer version right now (`chat.update`). |
-
----
-
-## ⚙️ Configuration
-
-Each module keeps its own file, so you only need to touch what you're actually enabling.
-
-### `config.yml` — modules & core messages
-
-```yaml
-modules:
-    chatcolor: true      # Per-player chat color (/chatcolor)
-    discordsrv: true      # DiscordSRV integration hook
-    discordsrv_send: false # Forward chat to DiscordSRV, per-channel as mapped in DiscordSRV's own Channels config (off by default)
-    itemsadder: true      # ItemsAdder compatibility: resolve its :name: font images in chat (no-op if ItemsAdder isn't installed)
-    update_checker: true  # Check GitLab for a newer release on startup (async, fail-silent)
-    focus: true           # Chat focus module
-    filter: true           # Word filter/replacer
-    chatformat:
-        spam: { enable: false, limit: 10 }   # Repeated-character spam guard
-        flood: { enable: false }              # Repeated-message guard
-        lowercase: false
-        title_format: false
-```
-
-> **DiscordSRV channel selection:** with `discordsrv_send: true`, a SlateChat channel is only forwarded if its name is a key in DiscordSRV's own `Channels` option (`plugins/DiscordSRV/config.yml`) — e.g. `Channels: {"global": "123456789"}` forwards only the `global` channel; channels left out simply aren't sent. If you also want to stop DiscordSRV's *own* built-in chat listener from independently relaying raw vanilla chat (which ignores SlateChat's channels entirely), set `DiscordChatChannelMinecraftToDiscord: false` in DiscordSRV's config so SlateChat's per-channel forwarding is the only path to Discord.
-
-> **ItemsAdder compatibility:** with `itemsadder: true` (default), any `:name:` font image ItemsAdder registers — emoji, rank/prefix badges (including one set via `%luckperms_prefix%`), custom icons — resolves through ItemsAdder's own `FontImageWrapper.replaceFontImages()` API wherever SlateChat renders text, including that font image's own `permission:`, if it's set in ItemsAdder's config. Nothing to configure on ItemsAdder's side; it just needs to be installed and enabled.
-
-### `channels.yml` — channel definitions
-
-Ships with `local` (radius-based) and `global` (broadcast) by default:
-
-```yaml
-local:
-    format: "<yellow>[Local] <yellow><player><blue><bold>> <yellow>%chat_color%<message>"
-    command: "l"
-    broadcast: false
-    radius: 200
-    restrict: false
-    actionbar: true
-    permission: chat.local
-
-global:
-    format: "<gray>[Global] <gray><player><blue><bold>> <gray>%chat_color%<message>"
-    command: "g"
-    broadcast: true
-    radius: 0
-    restrict: false
-    actionbar: false
-    permission: chat.global
-```
-
-Add PlaceholderAPI placeholders (e.g. `%luckperms_prefix%`) directly into any channel's `format` if you want prefixes/suffixes — they're not baked into the defaults so a fresh install doesn't depend on LuckPerms or other rank plugins.
-
-### `focus.yml` — forced focus per world
-
-```yaml
-worlds:
-    - dummy:global
-```
-
-### `filter.yml` — blocked words & replacements
-
-```yaml
-blocked_words:
-    - "bitch"
-replace:
-    - "barney->swarley"
-```
-
-### `color.yml` — chat color module
-
-```yaml
-enable_rgb: true
-clear_keywords: ["clear", "remove", "reset"]
-```
+This README only covers what you need to get it running and building from source. Everything else — full syntax guide, every config option, every permission node — lives in [`docs/`](docs), indexed below.
 
 ---
 
@@ -177,9 +38,9 @@ SlateChat only uses stable Bukkit/Paper API (events, commands, Adventure/MiniMes
 
 Verified compatible: **Paper 1.21.x through 26.2** (including the version-numbering switch from the old `1.21.x` scheme to the new year-based `26.x` scheme) — the jar compiled against the older `1.21.1` Paper API loads and runs unchanged on a 26.2 server, no recompilation needed.
 
-> **Java note:** Minecraft 26.1+ requires the server itself to run on **Java 25**, regardless of the plugin. This doesn't change what SlateChat is built with (still Java 21, see below) — it's a requirement for whoever is hosting a 26.1+ server, not something the plugin needs updated for.
+> **Java note:** Minecraft 26.1+ requires the server itself to run on **Java 25**, regardless of the plugin. This doesn't change what SlateChat is built with (still Java 21) — it's a requirement for whoever is hosting a 26.1+ server, not something the plugin needs updated for.
 
-> **Forks (Purpur and similar):** SlateChat should run fine on Paper forks like Purpur, since they build on top of the same Paper API. **Guaranteed compatibility is on Paper itself** — forks aren't part of our testing, so behavior there isn't officially verified.
+> **Forks (Purpur and similar):** SlateChat should run fine on Paper forks, since they build on top of the same Paper API. **Guaranteed compatibility is on Paper itself** — forks aren't part of our testing.
 
 ---
 
@@ -194,26 +55,41 @@ Verified compatible: **Paper 1.21.x through 26.2** (including the version-number
 
 ---
 
+## 🚀 Quick start
+
+1. Grab `SlateChat.jar` from the [official downloads](https://deepslate.ch/resources/slatechat) or [GitLab Releases](https://gitlab.com/deepslatech/slatechat/-/releases).
+2. Drop it into `plugins/`, alongside [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) (required — SlateChat won't load without it).
+3. Start the server once to generate `config.yml`, `channels.yml`, `color.yml`, `filter.yml` and `focus.yml` in `plugins/SlateChat/`.
+4. Edit to taste (see [`docs/configuration.md`](docs/configuration.md)), then `/slatechat reload` — no restart needed.
+
+---
+
 ## 📦 Building from source
 
 ```bash
-# Clone the repository
 git clone https://gitlab.com/deepslatech/slatechat.git
 cd slatechat
-
-# Build the plugin jar
 ./gradlew build
 
 # The shaded jar will be at build/libs/SlateChat-<version>.jar
 ```
 
-### Requirements
+Requires **Java 21** to build (matches the `1.21.1` Paper API target — see [Compatibility](#-compatibility) for what that means on newer servers). No local Gradle install needed, the wrapper handles it.
 
-- **Java 21** to build (matches the `1.21.1` Paper API target — running the resulting jar on a Minecraft 26.1+ server requires that server to run on Java 25, see [Compatibility](#-compatibility)). No local Gradle install needed — the wrapper (`gradlew`) handles that.
-- **Paper** 1.21.1 through 26.2 (or compatible fork) — see [Compatibility](#-compatibility)
-- **[PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI)** — required dependency
-- **[DiscordSRV](https://github.com/DiscordSRV/DiscordSRV)** — optional, only needed for the Discord bridge
-- **[ItemsAdder](https://itemsadder.com/)** — optional, only needed for ItemsAdder compatibility
+---
+
+## 📚 Documentation
+
+| File                                                          | Covers                                                                    |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| [`docs/configuration.md`](docs/configuration.md)                 | Every option in `config.yml`, `channels.yml`, and the other module configs, plus SlateChat's own placeholders |
+| [`docs/formatting.md`](docs/formatting.md)                       | Everyday MineDown/MiniMessage syntax — colors, links, hover, gradients     |
+| [`docs/formatting-advanced.md`](docs/formatting-advanced.md)     | Shadow color, transition, pride, and raw MiniMessage tags (keybind, insert, NBT, and more) for `channels.yml` formats |
+| [`docs/colors.md`](docs/colors.md)                               | The 16 legacy colors — chat codes, MiniMessage tags, hex values            |
+| [`docs/commands.md`](docs/commands.md)                           | Every command SlateChat registers                                          |
+| [`docs/permissions.md`](docs/permissions.md)                     | Every permission node SlateChat checks, in one place                       |
+
+The same content is also mirrored on the [full documentation site](https://deepslate.ch/docs/plugins/slatechat), with nicer navigation.
 
 ---
 
