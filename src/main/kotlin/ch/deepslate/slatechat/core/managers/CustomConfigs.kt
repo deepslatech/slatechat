@@ -7,6 +7,7 @@ import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.io.IOException
+import java.util.logging.Level
 
 object CustomConfigs {
 
@@ -26,11 +27,11 @@ object CustomConfigs {
             try {
                 load(file)
             } catch (e: IOException) {
-                plugin.logger.severe("Failed to load $name.yml")
-                e.printStackTrace()
+                // .log(SEVERE, msg, e) over severe(msg) + e.printStackTrace() -- the latter
+                // writes to stderr, disconnected from the plugin's own log/timestamps/prefix.
+                plugin.logger.log(Level.SEVERE, "Failed to load $name.yml", e)
             } catch (e: InvalidConfigurationException) {
-                plugin.logger.severe("Invalid YAML in $name.yml")
-                e.printStackTrace()
+                plugin.logger.log(Level.SEVERE, "Invalid YAML in $name.yml", e)
             }
         }
     }
@@ -45,8 +46,7 @@ object CustomConfigs {
             try {
                 config.save(file)
             } catch (e: IOException) {
-                plugin.logger.severe("Failed to save $name.yml")
-                e.printStackTrace()
+                plugin.logger.log(Level.SEVERE, "Failed to save $name.yml", e)
             }
         }
     }

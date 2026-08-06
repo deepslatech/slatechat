@@ -1,6 +1,8 @@
 package ch.deepslate.slatechat.commands
 
 import ch.deepslate.slatechat.SlateChat
+import ch.deepslate.slatechat.core.api.blocksSender
+import ch.deepslate.slatechat.core.integrations.SoftDependency
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.model.Message
 import net.kyori.adventure.text.minimessage.MiniMessage
@@ -31,7 +33,7 @@ class ChannelCommand(private val commandName: String) : CommandExecutor, TabComp
             .firstOrNull { it.command.equals(commandName, true) }
             ?: return true
 
-        if (channel.restrict && (channel.permission == null || !sender.hasPermission(channel.permission!!))) {
+        if (channel.blocksSender(sender)) {
             sender.sendMessage(msg("no_permission"))
             return true
         }
@@ -83,7 +85,7 @@ class ChannelCommand(private val commandName: String) : CommandExecutor, TabComp
 
     /** Bare (non-namespaced) font image names registered in ItemsAdder, via reflection. */
     private fun itemsAdderEmojiNames(): Set<String> {
-        return try {
+        return SoftDependency.tryOrElse(emptySet()) {
             val cls = Class.forName("dev.lone.itemsadder.api.FontImages.FontImageWrapper")
             val getIds = cls.getMethod("getNamespacedIdsInRegistry")
             @Suppress("UNCHECKED_CAST")
@@ -91,8 +93,6 @@ class ChannelCommand(private val commandName: String) : CommandExecutor, TabComp
             namespacedIds.mapNotNullTo(HashSet()) { id ->
                 id.substringAfter(':', missingDelimiterValue = "").ifEmpty { null }
             }
-        } catch (_: Exception) {
-            emptySet()
         }
     }
 

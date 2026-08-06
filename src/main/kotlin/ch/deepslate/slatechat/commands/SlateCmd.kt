@@ -27,7 +27,7 @@ class SlateCmd : CommandExecutor {
     ): Boolean {
 
         if (args.isEmpty()) {
-            val version = SlateChat.instance.description.version
+            val version = SlateChat.instance.pluginMeta.version
 
             val message: Component = Component.text("SlateChat ", NamedTextColor.AQUA)
                 .decorate(TextDecoration.BOLD)

@@ -1,6 +1,6 @@
-package ch.deepslate.slatechat.core.model
+package ch.deepslate.slatechat.core.format
 
-import org.bukkit.entity.Player
+import org.bukkit.permissions.Permissible
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -14,14 +14,16 @@ import java.util.regex.Pattern
  * [Text](#fff-#000) - Gradient from #fff to #000
  * [Text](rainbow) - Rainbow effect
  * [Text](rainbow:20) - Rainbow with duration 20
- * [Text](blue underline https://example.com) - Combined formatting + link with auto hover
+ * [Text](blue underlined https://example.com) - Combined formatting + link with auto hover
+ * [Text](!bold) - Inverts a decoration (e.g. force bold off), any of MinecraftDecorations.NAMES
  * \[Text](args) - Escaped: shows the literal "[Text](args)" instead of converting it
  */
 object MineDownConverter {
 
     private val MINEDOWN_PATTERN: Pattern = Pattern.compile("(\\\\)?\\[([^\\]]+)\\]\\(([^)]+)\\)")
+    private val HEX_COLOR = Regex("#[0-9a-fA-F]{6}")
 
-    fun convert(text: String, player: Player? = null): String {
+    fun convert(text: String, player: Permissible? = null): String {
         val matcher = MINEDOWN_PATTERN.matcher(text)
         val buffer = StringBuffer()
 
@@ -42,7 +44,7 @@ object MineDownConverter {
         return buffer.toString()
     }
 
-    private fun parseMineDown(text: String, args: String, player: Player? = null): String {
+    private fun parseMineDown(text: String, args: String, player: Permissible? = null): String {
         // Parse arguments: can be color, formatting, link, hover, gradient, or rainbow
         val parts = args.split("\\s+".toRegex()).filter { it.isNotEmpty() }
         
@@ -91,7 +93,8 @@ object MineDownConverter {
                 isColor(part) -> {
                     color = convertColor(part)
                 }
-                // Formatting: bold, italic, underline, strikethrough, obfuscated
+                // Formatting: bold, italic, underlined, strikethrough, obfuscated -- or any of
+                // those prefixed with "!" to force it off (MiniMessage's own <!bold> etc)
                 isFormatting(part) -> {
                     formatting.add(part.lowercase())
                 }
@@ -138,13 +141,13 @@ object MineDownConverter {
 
         // Apply formatting (bold, italic, etc.)
         formatting.forEach { fmt ->
-            result = when (fmt) {
-                "bold" -> "<bold>$result</bold>"
-                "italic" -> "<italic>$result</italic>"
-                "underline" -> "<underline>$result</underline>"
-                "strikethrough" -> "<strikethrough>$result</strikethrough>"
-                "obfuscated" -> "<obfuscated>$result</obfuscated>"
-                else -> if (fmt.startsWith("gradient:")) {
+            result = when {
+                // Plain ("bold") or inverted ("!bold") decoration -- both close with </$fmt>,
+                // including the "!" for the inverted form (MiniMessage's own <!bold>...</!bold>
+                // syntax, distinct from a mismatched </bold>).
+                fmt in MinecraftDecorations.NAMES || fmt.removePrefix("!") in MinecraftDecorations.NAMES ->
+                    "<$fmt>$result</$fmt>"
+                fmt.startsWith("gradient:") -> {
                     if (!canColor) {
                         result
                     } else {
@@ -155,7 +158,8 @@ object MineDownConverter {
                             result
                         }
                     }
-                } else if (fmt.startsWith("rainbow")) {
+                }
+                fmt.startsWith("rainbow") -> {
                     if (!canColor) {
                         result
                     } else if (fmt.contains(":")) {
@@ -164,15 +168,15 @@ object MineDownConverter {
                     } else {
                         "<rainbow>$result</rainbow>"
                     }
-                } else if (fmt.startsWith("shadow:")) {
+                }
+                fmt.startsWith("shadow:") -> {
                     if (!canColor) {
                         result
                     } else {
                         "<shadow:${fmt.substringAfter("shadow:")}>$result</shadow>"
                     }
-                } else {
-                    result
                 }
+                else -> result
             }
         }
         
@@ -196,40 +200,16 @@ object MineDownConverter {
     }
 
     private fun isColor(part: String): Boolean {
-        return when (part.lowercase()) {
-            "black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple",
-            "gold", "gray", "dark_gray", "blue", "green", "aqua", "red", "light_purple",
-            "yellow", "white" -> true
-            else -> part.matches(Regex("#[0-9a-fA-F]{6}"))
-        }
+        val lower = part.lowercase()
+        return lower in MinecraftColors.NAMES || HEX_COLOR.matches(lower)
     }
 
-    private fun convertColor(part: String): String {
-        return when (part.lowercase()) {
-            "black" -> "black"
-            "dark_blue" -> "dark_blue"
-            "dark_green" -> "dark_green"
-            "dark_aqua" -> "dark_aqua"
-            "dark_red" -> "dark_red"
-            "dark_purple" -> "dark_purple"
-            "gold" -> "gold"
-            "gray" -> "gray"
-            "dark_gray" -> "dark_gray"
-            "blue" -> "blue"
-            "green" -> "green"
-            "aqua" -> "aqua"
-            "red" -> "red"
-            "light_purple" -> "light_purple"
-            "yellow" -> "yellow"
-            "white" -> "white"
-            else -> if (part.matches(Regex("#[0-9a-fA-F]{6}"))) part else "white"
-        }
-    }
+    /** Only ever called on something isColor() already confirmed valid -- named colors are
+     *  already lowercase-safe for a MiniMessage tag, and hex is case-insensitive there too. */
+    private fun convertColor(part: String): String = part.lowercase()
 
-    private fun isFormatting(part: String): Boolean {
-        return when (part.lowercase()) {
-            "bold", "italic", "underline", "strikethrough", "obfuscated", "!bold" -> true
-            else -> false
-        }
-    }
+    /** Accepts a plain decoration name ("bold") or the same prefixed with "!" to force it off
+     *  ("!bold") -- both are real MiniMessage syntax, see MinecraftDecorations. */
+    private fun isFormatting(part: String): Boolean =
+        part.lowercase().removePrefix("!") in MinecraftDecorations.NAMES
 }

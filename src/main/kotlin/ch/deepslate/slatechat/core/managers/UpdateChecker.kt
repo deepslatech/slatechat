@@ -44,7 +44,7 @@ object UpdateChecker {
         if (!SlateChat.instance.config.getBoolean("modules.update_checker")) return
 
         Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
-            val current = SlateChat.instance.description.version
+            val current = SlateChat.instance.pluginMeta.version
             val remote = fetchLatestTag()
 
             val status = when {
@@ -92,7 +92,7 @@ object UpdateChecker {
     /** Step 3 — /slatechat update: check on demand and report straight back to whoever asked. */
     fun checkNow(sender: CommandSender) {
         Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
-            val current = SlateChat.instance.description.version
+            val current = SlateChat.instance.pluginMeta.version
             val remote = fetchLatestTag()
 
             if (remote == null) {
@@ -112,7 +112,7 @@ object UpdateChecker {
     }
 
     private fun availableMsg(remote: String): String {
-        val current = SlateChat.instance.description.version
+        val current = SlateChat.instance.pluginMeta.version
         return msg(
             "update_available",
             "<yellow>A new SlateChat version (<green><version></green>) is available! You are running <red><current></red>."

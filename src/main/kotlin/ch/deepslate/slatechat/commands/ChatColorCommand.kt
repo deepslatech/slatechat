@@ -3,7 +3,8 @@ package ch.deepslate.slatechat.commands
 import me.clip.placeholderapi.PlaceholderAPI
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
-import ch.deepslate.slatechat.core.model.MineDownConverter
+import ch.deepslate.slatechat.core.format.MineDownConverter
+import ch.deepslate.slatechat.core.format.MiniMessageRenderer
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
@@ -75,45 +76,15 @@ class ChatColorCommand : CommandExecutor {
         
         // Convert MineDown syntax to MiniMessage (pass player for permission checks)
         withPlaceholders = MineDownConverter.convert(withPlaceholders, sender)
-        // Convert hex and legacy codes to MiniMessage and ensure reset after placeholder
-        val converted = convertColorCodes(withPlaceholders) + "<reset>"
+        // Hex and legacy codes to MiniMessage -- same tag-aware conversion the chat pipeline
+        // uses (see MiniMessageRenderer), not a separate reimplementation that could drift
+        // out of sync with it, like this used to be.
+        val converted = MiniMessageRenderer.convertLegacyToMiniMessage(
+            MiniMessageRenderer.convertHexToMiniMessage(withPlaceholders)
+        ) + "<reset>"
         sender.sendMessage(mm.deserialize(converted))
 
         return true
-    }
-    
-    private fun convertColorCodes(text: String): String {
-        var result = text
-        
-        // Convert #RRGGBB to <#RRGGBB>
-        result = RGB.matcher(result).replaceAll("<#$1>")
-        
-        // Convert &X legacy codes to MiniMessage tags
-        result = result
-            .replace("&0", "<black>")
-            .replace("&1", "<dark_blue>")
-            .replace("&2", "<dark_green>")
-            .replace("&3", "<dark_aqua>")
-            .replace("&4", "<dark_red>")
-            .replace("&5", "<dark_purple>")
-            .replace("&6", "<gold>")
-            .replace("&7", "<gray>")
-            .replace("&8", "<dark_gray>")
-            .replace("&9", "<blue>")
-            .replace("&a", "<green>")
-            .replace("&b", "<aqua>")
-            .replace("&c", "<red>")
-            .replace("&d", "<light_purple>")
-            .replace("&e", "<yellow>")
-            .replace("&f", "<white>")
-            .replace("&l", "<bold>")
-            .replace("&o", "<italic>")
-            .replace("&n", "<underlined>")
-            .replace("&m", "<strikethrough>")
-            .replace("&k", "<obfuscated>")
-            .replace("&r", "<reset>")
-        
-        return result
     }
 
     private fun validate(hexColor: String): Boolean {

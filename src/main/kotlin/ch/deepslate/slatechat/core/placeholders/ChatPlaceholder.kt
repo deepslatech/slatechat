@@ -2,7 +2,6 @@ package ch.deepslate.slatechat.core.placeholders
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion
 import ch.deepslate.slatechat.SlateChat
-import ch.deepslate.slatechat.commands.ChatColorCommand
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import org.bukkit.entity.Player
 
@@ -15,12 +14,12 @@ class ChatPlaceholder(private val plugin: SlateChat) : PlaceholderExpansion() {
     override fun canRegister() = true
 
     override fun getAuthor(): String =
-        plugin.description.authors.joinToString()
+        plugin.pluginMeta.authors.joinToString()
 
     override fun getIdentifier(): String = "chat"
 
     override fun getVersion(): String =
-        plugin.description.version
+        plugin.pluginMeta.version
 
     override fun onPlaceholderRequest(player: Player?, identifier: String): String? {
         player ?: return null
@@ -44,10 +43,5 @@ class ChatPlaceholder(private val plugin: SlateChat) : PlaceholderExpansion() {
 
             else -> null
         }
-    }
-
-    private fun validateRGB(input: String): Boolean {
-        val matcher = ChatColorCommand.RGB.matcher(input)
-        return SlateChat.colorsConfig.getBoolean("enable_rgb") && matcher.matches()
     }
 }

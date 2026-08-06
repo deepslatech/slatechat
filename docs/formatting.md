@@ -32,10 +32,11 @@ Named colors match the standard 16 Minecraft colors (`<black>`, `<dark_blue>`, `
 <underlined>Underlined</underlined>
 <strikethrough>Strikethrough</strikethrough>
 <obfuscated>Obfuscated</obfuscated>
-<reset>Reset formatting</reset>
 ```
 
 Closing tags (`</bold>`) are optional if the rest of the string should stay formatted, but recommended for clarity.
+
+> **`<reset>` needs `chat.colored`, unlike the tags above.** It can't be closed (there's no `</reset>` — it's a bare `<reset>`), and because a channel's own format and your message end up parsed as one single string, a `<reset>` in your message would wipe out the channel's own established color too, not just formatting — the same thing `chat.colored` already exists to prevent. Without the permission, `<reset>` is stripped rather than left to reach the parser, so the channel's color falls through normally instead of resetting to Minecraft's plain default. With the permission, it works as documented by Adventure.
 
 ### Gradients & Rainbow
 
@@ -140,23 +141,25 @@ MineDown uses the syntax: `[Display Text](arguments)`
 [Hex color text](#FF5733)
 ```
 
-**Requires `chat.colored`**: solid colors, gradients (#8), and rainbow (#9) are all silently ignored if the player doesn't have this permission — the text just falls back to whatever color already surrounds it. Links, hover, and plain formatting (bold/italic/underline/strikethrough/obfuscated) still work either way.
+**Requires `chat.colored`**: solid colors, gradients (#8), and rainbow (#9) are all silently ignored if the player doesn't have this permission — the text just falls back to whatever color already surrounds it. Links, hover, and plain formatting (bold/italic/underlined/strikethrough/obfuscated) still work either way.
 
 #### 6. Formatting
 
 ```
 [Bold text](bold)
 [Italic text](italic)
-[Underlined text](underline)
+[Underlined text](underlined)
 [Strikethrough text](strikethrough)
 [Obfuscated text](obfuscated)
 ```
+
+Prefix any of these with `!` to force it off instead — `[Text](!bold)` — handy inside [Combinations](#7-combinations) if a placeholder ahead of it might already be bold.
 
 #### 7. Combinations
 
 ```
 [Admin](red bold)
-[Click here](green underline /warp spawn Teleport to spawn)
+[Click here](green underlined /warp spawn Teleport to spawn)
 [Website](aqua https://example.com Visit our website!)
 ```
 

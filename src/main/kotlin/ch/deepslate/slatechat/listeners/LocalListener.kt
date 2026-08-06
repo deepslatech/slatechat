@@ -1,6 +1,7 @@
 package ch.deepslate.slatechat.listeners
 
 import ch.deepslate.slatechat.SlateChat
+import ch.deepslate.slatechat.core.api.blocksSender
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import ch.deepslate.slatechat.core.managers.MessageManager
@@ -75,7 +76,7 @@ class LocalListener : Listener {
         }
 
         // Permission check
-        if (channel.restrict && (channel.permission == null || !player.hasPermission(channel.permission!!))) {
+        if (channel.blocksSender(player)) {
             val msg = SlateChat.instance.config.getString("no_permission") ?: ""
             player.sendMessage(mm.deserialize(msg))
             return

@@ -4,6 +4,27 @@ All notable changes to SlateChat are documented here. Format loosely follows [Ke
 
 The `## [x.y.z]` section matching the version in `gradle.properties` is what the CI pipeline publishes as the GitLab release's patch notes when that file changes on `master` — see [`.gitlab-ci.yml`](.gitlab-ci.yml).
 
+## [1.4.0] - 2026-08-06
+
+### Added
+
+- Restricted channels (`channels.yml` `restrict: true`) now wire their `permission` node natively into Bukkit, so the channel's command (`/l`, `/g`, etc.) is hidden from tab-complete and `/help` for senders who lack it. Trade-off worth knowing: Bukkit checks this *before* the command runs, so a sender without permission now sees the server's generic denial message there instead of SlateChat's own configurable `no_permission` — that message still shows for `/ch` and everywhere else, since this only affects the per-channel command's own native permission check.
+- Typing a color (legacy `&c` or raw MiniMessage `<red>`/etc.) directly in chat without `chat.colored` now gets a quiet action-bar heads-up (the same `no_permission` message) — the message itself still sends normally, just without the color, same as before; previously there was no feedback at all.
+- MineDown formatting args now accept a `!` prefix to force a decoration off — `[Text](!bold)` — using MiniMessage's own inversion syntax.
+
+### Fixed
+
+- `<reset>` typed in chat without `chat.colored` could wipe out the *channel's own* established color (e.g. a channel format's `<yellow>...<message>`), not just the player's — because the channel format and the player's message are parsed as one single MiniMessage string, `<reset>` doesn't know the difference. It's now stripped like the other color-family tags: with it gone, the channel's color falls through normally instead of resetting to Minecraft's plain default. With `chat.colored`, `<reset>` still works exactly as documented by Adventure.
+- `[Text](underline)` MineDown shorthand silently did nothing — `underline` was never a real MiniMessage tag name or alias (the real one is `underlined`; `u` is the alias). Docs described the same wrong spelling. Both fixed.
+- `[Text](!bold)` MineDown shorthand was recognized as valid input but silently produced no effect — see Added above.
+- A bare `>` character outside a tag (e.g. a channel format's own `<player><bold>>` separator) was silently deleted by the hex-conversion step introduced earlier in this same version — its tag/plain-text splitter excluded `>` from *both* alternatives, so a lone one matched neither and `Matcher.find()` skipped over it without a trace.
+- The action-bar "no permission for color" heads-up (see Added) and a channel's own read-receipt count both only ever show the *last* action bar sent — since the heads-up fired earlier in the pipeline, the read-receipt silently overwrote it before it could be seen. They're now combined into a single action-bar send when both apply.
+- A restricted channel (`restrict: true`) with no `permission` configured blocked every sender, including OP — every other permission check in the plugin already lets OP bypass an undeclared/misconfigured node by default; this was the one exception, and could lock the server owner out of their own channel over a config typo.
+
+### Changed
+
+- Large internal cleanup, no other behavior change intended: `Message.kt` (previously one 436-line class doing filtering, permission-gating, rendering, three separate plugin integrations, console logging, and recipient targeting all at once) split into single-responsibility pieces under `core/format` and `core/integrations`. `plugin.description` (deprecated) replaced with Paper's `plugin.pluginMeta` throughout. The 16 Minecraft color names and 5 decorations, previously hand-typed across several places, now come from Adventure's own `NamedTextColor.NAMES`/`TextDecoration.NAMES` in one shared source each (this is what surfaced the `underline`/`!bold` bugs above). Project's first unit tests added (48, all passing) covering the newly-extracted pure logic.
+
 ## [1.3.0] - 2026-08-06
 
 ### Added

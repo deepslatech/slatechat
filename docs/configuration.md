@@ -48,7 +48,7 @@ Ships with `local` (radius-based) and `global` (broadcast) by default:
 
 ```yaml
 local:
-    format: "<yellow>[Local] <yellow><player><blue><bold>> <yellow>%chat_color%<message>"
+    format: "<yellow>[Local] <player><blue><bold>> <yellow>%chat_color%<message>"
     command: "l"
     broadcast: false
     radius: 200
@@ -57,7 +57,7 @@ local:
     permission: chat.local
 
 global:
-    format: "<gray>[Global] <gray><player><blue><bold>> <gray>%chat_color%<message>"
+    format: "<gray>[Global] <player><blue><bold>> <gray>%chat_color%<message>"
     command: "g"
     broadcast: true
     radius: 0

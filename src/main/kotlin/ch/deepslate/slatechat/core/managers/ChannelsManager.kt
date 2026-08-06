@@ -58,6 +58,22 @@ object ChannelsManager {
         val cmdName = channel.command.lowercase()
         val cmdManager = CommandManager(SlateChat.instance, cmdName)
         cmdManager.register(ChannelCommand(cmdName))
+
+        // Wire the permission natively so Bukkit hides the command from tab-complete/help
+        // for senders who lack it -- a nicer UX than just letting them discover it and get
+        // denied. Only when there's an actual node to check: `restrict: true` with no
+        // `permission` set means "nobody qualifies", which Bukkit has no way to express via
+        // command.permission (null there means "unrestricted") -- that case is still caught
+        // by Channel.blocksSender() inside ChannelCommand.onCommand(), same as before.
+        //
+        // Trade-off worth knowing: Bukkit checks this *before* onCommand() runs, so a sender
+        // without permission sees the server's generic denial message instead of SlateChat's
+        // own configurable `no_permission` -- only ChannelCommand's own blocksSender() check
+        // (unreachable via this path, but still hit for e.g. /ch) shows that message.
+        if (channel.restrict && channel.permission != null) {
+            cmdManager.permission = channel.permission
+        }
+
         commands[cmdName] = cmdManager
     }
 }

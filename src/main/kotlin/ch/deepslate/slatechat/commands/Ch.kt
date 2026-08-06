@@ -2,6 +2,7 @@ package ch.deepslate.slatechat.commands
 
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.api.Channel
+import ch.deepslate.slatechat.core.api.blocksSender
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import net.kyori.adventure.text.minimessage.MiniMessage
@@ -36,15 +37,15 @@ class Ch : CommandExecutor, TabCompleter {
             it.name.equals(args[0], true) || it.command.equals(args[0], true)
         }
 
-        if (channel == null ||
-            (channel.restrict && (channel.permission == null || !sender.hasPermission(channel.permission!!)))) {
+        if (channel == null || channel.blocksSender(sender)) {
             sender.sendMessage(msg("invalid_channel"))
             return true
         }
 
         ChatPlayerManager.get(sender).channel = channel
 
-        val message = SlateChat.instance.config.getString("channel_changed")!!
+        val message = (SlateChat.instance.config.getString("channel_changed")
+            ?: "<green>Channel changed to <channelName> - <channelCommand>")
             .replace("<channelName>", channel.name)
             .replace("<channelCommand>", channel.command)
 

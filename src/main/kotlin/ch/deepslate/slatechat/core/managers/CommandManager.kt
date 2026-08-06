@@ -30,10 +30,6 @@ class CommandManager(plugin: JavaPlugin, name: String) {
         get() = command.permission
         set(value) { command.permission = value }
 
-    var permissionMessage: String?
-        get() = command.permissionMessage
-        set(value) { command.permissionMessage = value }
-
     var usage: String?
         get() = command.usage
         set(value) { command.usage = value ?: "" }
@@ -54,7 +50,7 @@ class CommandManager(plugin: JavaPlugin, name: String) {
         val commandMapField = plugin.server.javaClass.getDeclaredField("commandMap")
         commandMapField.isAccessible = true
         val commandMap = commandMapField.get(plugin.server) as CommandMap
-        commandMap.register(plugin.description.name.lowercase(), dyn)
+        commandMap.register(plugin.pluginMeta.name.lowercase(), dyn)
         return dyn
     }
 }

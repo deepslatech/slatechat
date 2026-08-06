@@ -34,6 +34,17 @@ dependencies {
 
     // DiscordSRV (provided by the server)
     compileOnly("com.discordsrv:discordsrv:1.28.0")
+
+    // Test framework -- kotlin("test") resolves to JUnit5 + kotlin.test assertions,
+    // no separate JUnit Jupiter dependency needed
+    testImplementation(kotlin("test"))
+    // compileOnly isn't visible to the test source set by default -- tests that need
+    // Bukkit types (e.g. a fake Permissible) need this repeated here explicitly
+    testImplementation("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 // ================= BUILD CONFIGURATION =================
