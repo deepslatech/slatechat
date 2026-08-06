@@ -5,7 +5,7 @@ main: ch.deepslate.slatechat.SlateChat
 author: Deepslate Studios
 website: https://gitlab.com/deepslatech/slatechat
 depend: [PlaceholderAPI]
-softdepend: [DiscordSRV]
+softdepend: [DiscordSRV, ItemsAdder]
 commands:
     ch:
     chatcolor:

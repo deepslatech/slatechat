@@ -2,6 +2,7 @@ package ch.deepslate.slatechat.listeners
 
 import ch.deepslate.slatechat.core.managers.FocusManager
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
+import ch.deepslate.slatechat.core.managers.UpdateChecker
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerChangedWorldEvent
@@ -21,6 +22,9 @@ class ChatPlayerListener : Listener {
         }
 
         ChatPlayerManager.add(chatPlayer)
+
+        // Let admins with chat.update know if a new version was found on startup
+        UpdateChecker.notify(player)
     }
 
     @EventHandler

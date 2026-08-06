@@ -4,6 +4,8 @@ SlateChat accepts **two** formatting syntaxes at the same time, in every channel
 
 Legacy `&`/`§` codes and raw HEX (`#RRGGBB`) are also converted automatically wherever the plugin renders text (see [`Colors.md`](Colors.md) for the full legacy code table).
 
+If [ItemsAdder](https://itemsadder.com/) is installed, its `:name:` font images (emoji, rank badges, custom icons) are resolved too — see [ItemsAdder Compatibility](#itemsadder-compatibility) below.
+
 ---
 
 ## MiniMessage
@@ -224,6 +226,20 @@ Result:
 4. Single quotes in hover text are automatically escaped
 5. Multiple spaces in arguments are preserved in hover text
 6. MineDown and MiniMessage tags can be freely combined in the same string — MineDown is converted to MiniMessage internally before final rendering
+
+---
+
+## ItemsAdder Compatibility
+
+If [ItemsAdder](https://itemsadder.com/) is installed and enabled, SlateChat automatically resolves its `:name:` font-image shorthand — emoji, rank/prefix badges, custom icons, anything registered as a font image — no extra setup needed beyond having ItemsAdder installed (toggle: `modules.itemsadder` in `config.yml`, on by default).
+
+```
+:smile:
+```
+
+Works when a player types it in chat, when it's baked directly into a channel's `format:` string (e.g. as a prefix icon), and even through a resolved placeholder — like a LuckPerms rank prefix (`%luckperms_prefix%`) set to a font image in LuckPerms' own config. Each font image's own `permission:` (if set in ItemsAdder's config) is respected — without it, a player just sees the literal `:name:` text.
+
+This is resolved through ItemsAdder's own API (`FontImageWrapper.replaceFontImages()`), independently of MineDown/MiniMessage — mix it freely with either syntax in the same message.
 
 ---
 

@@ -49,6 +49,26 @@ invalid_channel: "<red>Invalid channel!"
 plugin_reloaded: "<green>Plugin reloaded."
 
 #
+# Update checker messages (see modules.update_checker)
+# Placeholders: <version> - the newer version found, <current> - the version you're running
+#
+update_available: "<yellow>A new SlateChat version (<green><version></green>) is available! You are running <red><current></red>."
+# Sent to whoever ran /slatechat update when there's nothing newer
+update_up_to_date: "<green>You're already running the latest version (<current>)."
+# Sent to whoever ran /slatechat update if GitLab couldn't be reached
+update_check_failed: "<red>Could not reach GitLab to check for updates. Try again later."
+# The 3 messages below are printed to the server console via the console sender
+# (an Audience, like a player), not plugin.logger -- so MiniMessage tags render as
+# actual color there too, same as everywhere else.
+#
+# Logged to console on startup if an update was found. Placeholders: <version>, <current>, <url>
+update_console_log: "<gray>A new version (<yellow><version></yellow>) is available! You are running <current>. Download: <url></gray>"
+# Logged to console on startup when already up to date. Placeholder: <current>
+update_console_up_to_date: "<gray>You are running the latest version (<green><current></green>).</gray>"
+# Logged to console on startup if the check itself failed (offline, GitLab down, etc.)
+update_console_check_failed: "<red>Could not check for updates."
+
+#
 # Should all chat messages be sent to console?
 #
 log_to_console: true
@@ -89,6 +109,20 @@ modules:
     # own "Channels" config option (default false to avoid duplicates). Channels not listed
     # there in DiscordSRV's config are not forwarded.
     discordsrv_send: false
+    #
+    # ItemsAdder integration
+    # Resolves ItemsAdder's :emoji_name: shorthand (and other font images) found in chat
+    # messages or baked into channel formats, so they render instead of showing as literal
+    # text. Only takes effect if ItemsAdder is installed; has no effect otherwise.
+    #
+    itemsadder: true
+    #
+    # Update checker
+    # Checks GitLab for a newer SlateChat release on startup (async, never blocks
+    # startup or chat). Logs to console if outdated; players with chat.update also
+    # get a chat notice on join. Safe to disable if you don't want it phoning home.
+    #
+    update_checker: true
     #
     # Chat focus modules
     # Players can choose a chat to default speak on or

@@ -5,6 +5,7 @@ import ch.deepslate.slatechat.commands.SlateCmd
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.CustomConfigs
 import ch.deepslate.slatechat.core.managers.FocusManager
+import ch.deepslate.slatechat.core.managers.UpdateChecker
 import ch.deepslate.slatechat.core.placeholders.ChatPlaceholder
 import ch.deepslate.slatechat.listeners.ChatPlayerListener
 import ch.deepslate.slatechat.listeners.LocalListener
@@ -26,11 +27,13 @@ class SlateChat : JavaPlugin() {
         var useFilter: Boolean = false
 
         var isDiscordSRV: Boolean = false
+        var isItemsAdder: Boolean = false
     }
 
     override fun onEnable() {
         instance = this
         isDiscordSRV = false
+        isItemsAdder = false
 
         saveDefaultConfig()
 
@@ -72,9 +75,20 @@ class SlateChat : JavaPlugin() {
             }
         }
 
+        // ItemsAdder hook (resolves :emoji: font images in chat)
+        if (config.getBoolean("modules.itemsadder")) {
+            val itemsAdder = Bukkit.getPluginManager().getPlugin("ItemsAdder")
+            if (itemsAdder != null && itemsAdder.isEnabled) {
+                isItemsAdder = true
+            }
+        }
+
         // Events
         server.pluginManager.registerEvents(LocalListener(), this)
         server.pluginManager.registerEvents(ChatPlayerListener(), this)
+
+        // Update checker (async, fail-silent)
+        UpdateChecker.check()
     }
 
     override fun onDisable() {

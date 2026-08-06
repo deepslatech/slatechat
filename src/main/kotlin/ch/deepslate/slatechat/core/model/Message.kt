@@ -8,6 +8,7 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
+import org.bukkit.permissions.Permissible
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 import ch.deepslate.slatechat.core.model.MineDownConverter
@@ -89,6 +90,8 @@ class Message(
             
             // Convert MineDown syntax to MiniMessage (pass player for permission checks)
             withPlaceholders = MineDownConverter.convert(withPlaceholders, sender)
+            // Resolve ItemsAdder :emoji: font images, if ItemsAdder is installed
+            withPlaceholders = applyItemsAdderFontImages(withPlaceholders)
             // Support line breaks using <br> or literal \n from configs
             withPlaceholders = convertBreaks(withPlaceholders)
             // Convert hex colors (#RRGGBB) to hex MiniMessage format <#RRGGBB>
@@ -134,6 +137,31 @@ class Message(
         }
     }
     
+    /**
+     * Resolves ItemsAdder's `:emoji_name:` font-image shorthand into the actual rendered
+     * text, respecting each font image's own permission (via ItemsAdder's own API).
+     * Uses reflection (soft dependency) so this is a no-op when ItemsAdder isn't installed.
+     */
+    private fun applyItemsAdderFontImages(text: String): String {
+        if (!SlateChat.isItemsAdder) return text
+
+        return try {
+            val cls = Class.forName("dev.lone.itemsadder.api.FontImages.FontImageWrapper")
+            val replaceFontImages = cls.getMethod(
+                "replaceFontImages",
+                Permissible::class.java,
+                String::class.java
+            )
+            replaceFontImages.invoke(null, sender, text) as String
+        } catch (_: ClassNotFoundException) {
+            // ItemsAdder not present
+            text
+        } catch (_: Exception) {
+            // Silently ignore ItemsAdder API failures to avoid impacting chat
+            text
+        }
+    }
+
     private fun convertHexToMiniMessage(text: String): String {
         val matcher = HEX_PATTERN.matcher(text)
         val buffer = StringBuffer()

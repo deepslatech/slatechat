@@ -28,5 +28,7 @@ object ChatPlayerManager {
         chatPlayers.clear()
     }
 
+    fun getAll(): Collection<ChatPlayer> = chatPlayers.values
+
     fun getDefaultChannel() = ChannelsManager.local
 }

@@ -2,7 +2,7 @@
 
 # <img src="public/image/icon.webp" alt="" width="32" height="32" align="center" /> SlateChat
 
-> A modular chat plugin for Paper — channels, per-player chat colors, MineDown/MiniMessage formatting, spam & flood protection, and DiscordSRV bridging.
+> A modular chat plugin for Paper — channels, per-player chat colors, MineDown/MiniMessage formatting, spam & flood protection, DiscordSRV bridging, and ItemsAdder compatibility.
 
 <img alt="platform" src="https://img.shields.io/badge/platform-Paper%201.21.x%20--%2026.x-2c3598?style=for-the-badge&logo=minecraft&logoColor=white&labelColor=1a1b26" />
 <img alt="language" src="https://img.shields.io/badge/language-Kotlin-2c3598?style=for-the-badge&logo=kotlin&logoColor=white&labelColor=1a1b26" />
@@ -32,7 +32,7 @@
 
 **SlateChat** replaces vanilla chat with a channel-based system driven by simple, per-channel YAML formats. Every channel supports full [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) expansion, MineDown-style links/hover/gradients rendered through Adventure's MiniMessage, and legacy `&`/`§` codes for drop-in compatibility with existing configs — see [`Syntax.md`](Syntax.md) and [`Colors.md`](Colors.md).
 
-On top of chat routing, it ships optional modules for per-player chat colors, a chat "focus" system, word filtering/replacement, spam & flood protection, and a one-way bridge to DiscordSRV — each toggled independently so you only configure what you actually use.
+On top of chat routing, it ships optional modules for per-player chat colors, a chat "focus" system, word filtering/replacement, spam & flood protection, a one-way bridge to DiscordSRV, and ItemsAdder compatibility — each toggled independently so you only configure what you actually use.
 
 ---
 
@@ -46,7 +46,9 @@ On top of chat routing, it ships optional modules for per-player chat colors, a 
 - **Spam & flood protection** — block messages with excessive repeated characters or repeated consecutive messages.
 - **Action bar read receipts** — senders see how many nearby/online players actually received their message.
 - **DiscordSRV bridge** — optionally forward console-logged chat to Discord, per-channel: each SlateChat channel is only sent if it's mapped in DiscordSRV's own `Channels` config option, so you pick exactly which channel(s) get relayed (off by default to avoid duplicate messages if DiscordSRV already relays chat itself).
+- **ItemsAdder compatible** — ItemsAdder's `:name:` font images (emoji, rank/prefix badges, custom icons) resolve automatically wherever SlateChat renders text — chat, channel formats, even a `%luckperms_prefix%` set to one — respecting each font image's own permission. Detected automatically if ItemsAdder is installed, no extra setup needed.
 - **Full PlaceholderAPI support** — usable in channel formats, console log format, and every player-facing message.
+- **Update checker** — checks GitLab on startup for a newer release; logs to console and notifies admins with `chat.update` in chat. Async, fail-silent, off with one config flag.
 
 ---
 
@@ -70,6 +72,7 @@ Exposed under the `chat` identifier (`%chat_<placeholder>%`):
 | `chat.count.bypass`          | Player is excluded from the actionbar receivers count. Useful for vanished admins.                                            |
 | `chat.hover.bypass`         | Allows custom hover text in MineDown links/commands. Without this, hover shows the link/command itself automatically.         |
 | `chat.reload`                | Allows the admins to reload the plugin with `/slatechat reload`.                                                              |
+| `chat.update`                 | Get notified in chat on join if a newer SlateChat version is available (also always logged to console regardless of this permission). |
 | `chat.local`                 | Permission to use the local channel (if `restrict: true` in `channels.yml`).                                                  |
 | `chat.global`                | Permission to use the global channel (if `restrict: true` in `channels.yml`).                                                 |
 
@@ -87,6 +90,7 @@ No built-in aliases — server aliases are already configurable per-server, so S
 | `/chatcolor <color\|clear>` | Set or clear your personal chat color.            |
 | `/slatechat`               | Show the running plugin version.                  |
 | `/slatechat reload`        | Reload configs and modules (`chat.reload`).        |
+| `/slatechat update`        | Check for a newer version right now (`chat.update`). |
 
 ---
 
@@ -101,6 +105,8 @@ modules:
     chatcolor: true      # Per-player chat color (/chatcolor)
     discordsrv: true      # DiscordSRV integration hook
     discordsrv_send: false # Forward chat to DiscordSRV, per-channel as mapped in DiscordSRV's own Channels config (off by default)
+    itemsadder: true      # ItemsAdder compatibility: resolve its :name: font images in chat (no-op if ItemsAdder isn't installed)
+    update_checker: true  # Check GitLab for a newer release on startup (async, fail-silent)
     focus: true           # Chat focus module
     filter: true           # Word filter/replacer
     chatformat:
@@ -111,6 +117,8 @@ modules:
 ```
 
 > **DiscordSRV channel selection:** with `discordsrv_send: true`, a SlateChat channel is only forwarded if its name is a key in DiscordSRV's own `Channels` option (`plugins/DiscordSRV/config.yml`) — e.g. `Channels: {"global": "123456789"}` forwards only the `global` channel; channels left out simply aren't sent. If you also want to stop DiscordSRV's *own* built-in chat listener from independently relaying raw vanilla chat (which ignores SlateChat's channels entirely), set `DiscordChatChannelMinecraftToDiscord: false` in DiscordSRV's config so SlateChat's per-channel forwarding is the only path to Discord.
+
+> **ItemsAdder compatibility:** with `itemsadder: true` (default), any `:name:` font image ItemsAdder registers — emoji, rank/prefix badges (including one set via `%luckperms_prefix%`), custom icons — resolves through ItemsAdder's own `FontImageWrapper.replaceFontImages()` API wherever SlateChat renders text, including that font image's own `permission:`, if it's set in ItemsAdder's config. Nothing to configure on ItemsAdder's side; it just needs to be installed and enabled.
 
 ### `channels.yml` — channel definitions
 
@@ -181,6 +189,7 @@ Verified compatible: **Paper 1.21.x through 26.2** (including the version-number
 |-----------------------------------------------------------------------------|:---------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **[PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI)**      |   Hard    | Registered and used directly at startup; SlateChat won't load without it.                                                                                                                 |
 | **[DiscordSRV](https://github.com/DiscordSRV/DiscordSRV)**                  |   Soft    | Only needed if you enable `modules.discordsrv` / `modules.discordsrv_send` to bridge chat to Discord.                                                                                    |
+| **[ItemsAdder](https://itemsadder.com/)**      |   Soft    | Only needed for ItemsAdder compatibility (`modules.itemsadder`) — its `:name:` font images resolve in chat. Everything else works identically without it.                                |
 | **[LuckPerms](https://luckperms.net/)**                                     | Optional  | Not a Bukkit dependency at all — only needed if your channel formats use `%luckperms_prefix%`/`%luckperms_suffix%` placeholders (resolved through PlaceholderAPI, see the warning above). |
 
 ---
@@ -204,6 +213,7 @@ cd slatechat
 - **Paper** 1.21.1 through 26.2 (or compatible fork) — see [Compatibility](#-compatibility)
 - **[PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI)** — required dependency
 - **[DiscordSRV](https://github.com/DiscordSRV/DiscordSRV)** — optional, only needed for the Discord bridge
+- **[ItemsAdder](https://itemsadder.com/)** — optional, only needed for ItemsAdder compatibility
 
 ---
 
@@ -219,5 +229,6 @@ SlateChat is a continuation of the original **[SimplexChat](https://github.com/L
 
 - [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) by the extendedclip team.
 - [DiscordSRV](https://github.com/DiscordSRV/DiscordSRV) by Scarsz and contributors.
+- [ItemsAdder](https://itemsadder.com/) by LoneDev.
 - [Adventure](https://github.com/KyoriPowered/adventure) / MiniMessage by KyoriPowered.
 - Lucas Manoel Lopes and every contributor to the original [SimplexChat](https://github.com/Luucx7/SimplexChat) project this plugin descends from.
