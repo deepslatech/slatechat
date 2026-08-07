@@ -2,7 +2,7 @@
 
 All notable changes to SlateChat are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
-The `## [x.y.z]` section matching the version in `gradle.properties` is what the CI pipeline publishes as the GitLab release's patch notes when that file changes on `master` — see [`.gitlab-ci.yml`](.gitlab-ci.yml).
+The `## [x.y.z]` section matching the version in `gradle.properties` is what the CI pipeline publishes as the GitLab release's patch notes when that file changes on the default branch (`main`) — see [`.gitlab-ci.yml`](.gitlab-ci.yml).
 
 ## [1.7.0] - 2026-08-07
 
