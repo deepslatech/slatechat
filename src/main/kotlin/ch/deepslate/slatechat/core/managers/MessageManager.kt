@@ -2,12 +2,18 @@ package ch.deepslate.slatechat.core.managers
 
 import ch.deepslate.slatechat.SlateChat
 import org.bukkit.entity.Player
-import java.util.*
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
 object MessageManager {
 
-    private val lastMessage: MutableMap<UUID, String> = HashMap()
+    // Was a plain HashMap -- read/written from LocalListener.onChat, which reacts to
+    // AsyncChatEvent and so already runs off the main thread today (not just after Folia
+    // work). Every other per-player map in the codebase already uses ConcurrentHashMap
+    // (ChatPlayerManager, ChannelsManager); this one had fallen behind.
+    private val lastMessage: MutableMap<UUID, String> = ConcurrentHashMap()
 
     /* ================= FLOOD ================= */
 
