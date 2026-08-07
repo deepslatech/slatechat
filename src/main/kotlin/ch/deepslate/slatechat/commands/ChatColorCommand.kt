@@ -4,19 +4,17 @@ import me.clip.placeholderapi.PlaceholderAPI
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import ch.deepslate.slatechat.core.format.MineDownConverter
+import ch.deepslate.slatechat.core.format.Messages
 import ch.deepslate.slatechat.core.format.MiniMessageRenderer
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.tree.LiteralCommandNode
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.entity.Player
 import java.util.regex.Pattern
 
 object ChatColorCommand {
-
-    private val mm = MiniMessage.miniMessage()
 
     // HEX needs full 6 digits to avoid ambiguous MiniMessage parsing
     val RGB: Pattern =
@@ -93,7 +91,7 @@ object ChatColorCommand {
         val converted = MiniMessageRenderer.convertLegacyToMiniMessage(
             MiniMessageRenderer.convertHexToMiniMessage(withPlaceholders)
         ) + "<reset>"
-        sender.sendMessage(mm.deserialize(converted))
+        sender.sendMessage(Messages.deserialize(converted))
     }
 
     private fun validate(hexColor: String): Boolean {
@@ -107,8 +105,5 @@ object ChatColorCommand {
     }
 
     private fun msg(path: String) =
-        mm.deserialize(
-            SlateChat.colorsConfig.getString(path)
-                ?: "<red>Missing message: $path</red>"
-        )
+        Messages.resolve(SlateChat.colorsConfig, path, "<red>Missing message: $path</red>")
 }

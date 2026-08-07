@@ -3,7 +3,7 @@ package ch.deepslate.slatechat.core.managers
 import ch.deepslate.slatechat.core.api.ChatPlayer
 import ch.deepslate.slatechat.core.model.ChatPlayerImpl
 import org.bukkit.entity.Player
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 object ChatPlayerManager {

@@ -1,6 +1,7 @@
 package ch.deepslate.slatechat.commands
 
 import ch.deepslate.slatechat.SlateChat
+import ch.deepslate.slatechat.core.format.Messages
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import ch.deepslate.slatechat.core.managers.CommandRegistrar
@@ -14,12 +15,8 @@ import io.papermc.paper.command.brigadier.Commands
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
-import net.kyori.adventure.text.minimessage.MiniMessage
-import org.bukkit.Bukkit
 
 object SlateCmd {
-
-    private val mm = MiniMessage.miniMessage()
 
     fun node(): LiteralCommandNode<CommandSourceStack> =
         Commands.literal("slatechat")
@@ -72,23 +69,8 @@ object SlateCmd {
             SlateChat.filterConfig = CustomConfigs.createCustomConfig("filter")
         }
 
-        // Re-evaluate DiscordSRV presence
-        SlateChat.isDiscordSRV = false
-        if (plugin.config.getBoolean("modules.discordsrv")) {
-            val discord = Bukkit.getPluginManager().getPlugin("DiscordSRV")
-            if (discord != null && discord.isEnabled) {
-                SlateChat.isDiscordSRV = true
-            }
-        }
-
-        // Re-evaluate ItemsAdder presence
-        SlateChat.isItemsAdder = false
-        if (plugin.config.getBoolean("modules.itemsadder")) {
-            val itemsAdder = Bukkit.getPluginManager().getPlugin("ItemsAdder")
-            if (itemsAdder != null && itemsAdder.isEnabled) {
-                SlateChat.isItemsAdder = true
-            }
-        }
+        // Re-evaluate DiscordSRV/ItemsAdder presence
+        plugin.detectSoftDependencies()
 
         // Re-load channels and focus. Channel *data* is fully live after this -- a channel
         // whose command already existed at boot picks up its new format/permission/etc.
@@ -114,8 +96,7 @@ object SlateCmd {
                 ?: ChannelsManager.local
         }
 
-        val msg = plugin.config.getString("plugin_reloaded") ?: "<green>Plugin reloaded."
-        sender.sendMessage(mm.deserialize(msg))
+        sender.sendMessage(Messages.resolve(plugin.config, "plugin_reloaded", "<green>Plugin reloaded."))
     }
 
     private fun update(source: CommandSourceStack) {
@@ -133,18 +114,15 @@ object SlateCmd {
      *  editable (`wiki_url`), defaulting to deepslate.ch's own docs site. No permission
      *  required, purely informational. */
     private fun wiki(source: CommandSourceStack) {
-        val url = SlateChat.instance.config.getString("wiki_url")
-            ?: "https://deepslate.ch/docs/plugins/slatechat"
+        val url = Messages.raw(SlateChat.instance.config, "wiki_url", "https://deepslate.ch/docs/plugins/slatechat")
         val link = "<click:open_url:$url><hover:show_text:'Click to open'><white><underlined>$url</underlined></white></hover></click>"
 
-        val message = (SlateChat.instance.config.getString("wiki_message") ?: "<green>Documentation: <url>")
+        val message = Messages.raw(SlateChat.instance.config, "wiki_message", "<green>Documentation: <url>")
             .replace("<url>", link)
 
-        source.sender.sendMessage(mm.deserialize(message))
+        source.sender.sendMessage(Messages.deserialize(message))
     }
 
     private fun noPermissionMessage() =
-        mm.deserialize(
-            SlateChat.instance.config.getString("no_permission") ?: "<red>You do not have permission!"
-        )
+        Messages.resolve(SlateChat.instance.config, "no_permission", "<red>You do not have permission!")
 }

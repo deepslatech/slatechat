@@ -1,5 +1,6 @@
 package ch.deepslate.slatechat
 
+import ch.deepslate.slatechat.core.integrations.PluginPresence
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.CommandRegistrar
 import ch.deepslate.slatechat.core.managers.CustomConfigs
@@ -8,7 +9,6 @@ import ch.deepslate.slatechat.core.managers.UpdateChecker
 import ch.deepslate.slatechat.core.placeholders.ChatPlaceholder
 import ch.deepslate.slatechat.listeners.ChatPlayerListener
 import ch.deepslate.slatechat.listeners.LocalListener
-import org.bukkit.Bukkit
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -66,21 +66,8 @@ class SlateChat : JavaPlugin() {
             filterConfig = CustomConfigs.createCustomConfig("filter")
         }
 
-        // DiscordSRV hook
-        if (config.getBoolean("modules.discordsrv")) {
-            val discord = Bukkit.getPluginManager().getPlugin("DiscordSRV")
-            if (discord != null && discord.isEnabled) {
-                isDiscordSRV = true
-            }
-        }
-
-        // ItemsAdder hook (resolves :emoji: font images in chat)
-        if (config.getBoolean("modules.itemsadder")) {
-            val itemsAdder = Bukkit.getPluginManager().getPlugin("ItemsAdder")
-            if (itemsAdder != null && itemsAdder.isEnabled) {
-                isItemsAdder = true
-            }
-        }
+        // DiscordSRV / ItemsAdder hooks
+        detectSoftDependencies()
 
         // Events
         server.pluginManager.registerEvents(LocalListener(), this)
@@ -93,5 +80,17 @@ class SlateChat : JavaPlugin() {
     override fun onDisable() {
         ChannelsManager.disable()
         FocusManager.unload()
+    }
+
+    /**
+     * Re-evaluates DiscordSRV/ItemsAdder presence against the current config + installed
+     * plugins. Called from [onEnable] and, since neither soft dependency can appear or
+     * disappear without a full restart but their modules can be toggled off in config.yml,
+     * from `/slatechat reload` (see `SlateCmd.reload`) as well -- one place for the check
+     * both need instead of two copies drifting apart.
+     */
+    fun detectSoftDependencies() {
+        isDiscordSRV = config.getBoolean("modules.discordsrv") && PluginPresence.isEnabled("DiscordSRV")
+        isItemsAdder = config.getBoolean("modules.itemsadder") && PluginPresence.isEnabled("ItemsAdder")
     }
 }

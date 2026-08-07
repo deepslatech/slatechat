@@ -1,7 +1,7 @@
 package ch.deepslate.slatechat.core.managers
 
 import ch.deepslate.slatechat.SlateChat
-import net.kyori.adventure.text.minimessage.MiniMessage
+import ch.deepslate.slatechat.core.format.Messages
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -29,7 +29,6 @@ object UpdateChecker {
         "https://gitlab.com/deepslatech/slatechat/-/releases/permalink/latest"
 
     private val TAG_PATTERN: Pattern = Pattern.compile("\"tag_name\"\\s*:\\s*\"v?([0-9.]+)\"")
-    private val mm = MiniMessage.miniMessage()
 
     @Volatile
     private var latestVersion: String? = null
@@ -74,10 +73,10 @@ object UpdateChecker {
      */
     private fun printBanner(current: String, status: String) {
         val console = Bukkit.getConsoleSender()
-        val border = mm.deserialize("<gold>=======================================</gold>")
+        val border = Messages.deserialize("<gold>=======================================</gold>")
         console.sendMessage(border)
-        console.sendMessage(mm.deserialize("<white>SlateChat <aqua>v$current</aqua> by Deepslate Studios</white>"))
-        console.sendMessage(mm.deserialize(status))
+        console.sendMessage(Messages.deserialize("<white>SlateChat <aqua>v$current</aqua> by Deepslate Studios</white>"))
+        console.sendMessage(Messages.deserialize(status))
         console.sendMessage(border)
     }
 
@@ -86,7 +85,7 @@ object UpdateChecker {
         val remote = latestVersion ?: return
         if (!player.hasPermission("chat.update")) return
 
-        player.sendMessage(mm.deserialize(availableMsg(remote)))
+        player.sendMessage(Messages.deserialize(availableMsg(remote)))
     }
 
     /** Step 3 — /slatechat update: check on demand and report straight back to whoever asked. */
@@ -96,17 +95,17 @@ object UpdateChecker {
             val remote = fetchLatestTag()
 
             if (remote == null) {
-                sender.sendMessage(mm.deserialize(msg("update_check_failed", "<red>Could not reach GitLab to check for updates. Try again later.")))
+                sender.sendMessage(Messages.deserialize(msg("update_check_failed", "<red>Could not reach GitLab to check for updates. Try again later.")))
                 return@runNow
             }
 
             if (isNewer(remote, current)) {
                 latestVersion = remote
-                sender.sendMessage(mm.deserialize(availableMsg(remote)))
+                sender.sendMessage(Messages.deserialize(availableMsg(remote)))
             } else {
                 val upToDate = msg("update_up_to_date", "<green>You're already running the latest version (<current>).")
                     .replace("<current>", current)
-                sender.sendMessage(mm.deserialize(upToDate))
+                sender.sendMessage(Messages.deserialize(upToDate))
             }
         }
     }
@@ -122,7 +121,7 @@ object UpdateChecker {
     }
 
     private fun msg(path: String, default: String): String =
-        SlateChat.instance.config.getString(path) ?: default
+        Messages.raw(SlateChat.instance.config, path, default)
 
     /** GET the release API and pull out tag_name, or null on any failure. Never throws. */
     private fun fetchLatestTag(): String? {

@@ -2,11 +2,11 @@ package ch.deepslate.slatechat.listeners
 
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.api.blocksSender
+import ch.deepslate.slatechat.core.format.Messages
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import ch.deepslate.slatechat.core.managers.MessageManager
 import ch.deepslate.slatechat.core.model.Message
-import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -17,7 +17,6 @@ class LocalListener : Listener {
 
     // Used only to flatten the player's raw chat Component into plain text for spam/flood checks
     private val legacy = LegacyComponentSerializer.legacyAmpersand()
-    private val mm = MiniMessage.miniMessage()
 
     @EventHandler(priority = EventPriority.HIGHEST)
     fun onChat(event: AsyncChatEvent) {
@@ -46,8 +45,7 @@ class LocalListener : Listener {
         // Spam check
         if (SlateChat.instance.config.getBoolean("modules.chatformat.spam.enable")) {
             if (MessageManager.isSpam(args)) {
-                val msg = SlateChat.instance.config.getString("modules.chatformat.spam.message") ?: ""
-                player.sendMessage(mm.deserialize(msg))
+                player.sendMessage(Messages.resolve(SlateChat.instance.config, "modules.chatformat.spam.message", ""))
                 SlateChat.instance.logger.info("Spam blocked from ${player.name}: $rawText")
                 event.isCancelled = true
                 return
@@ -57,8 +55,7 @@ class LocalListener : Listener {
         // Flood check (repeat)
         if (SlateChat.instance.config.getBoolean("modules.chatformat.flood.enable")) {
             if (MessageManager.isFlood(player, processedText)) {
-                val msg = SlateChat.instance.config.getString("modules.chatformat.flood.message") ?: ""
-                player.sendMessage(mm.deserialize(msg))
+                player.sendMessage(Messages.resolve(SlateChat.instance.config, "modules.chatformat.flood.message", ""))
                 SlateChat.instance.logger.info("Flood blocked from ${player.name}: $processedText")
                 event.isCancelled = true
                 return
@@ -77,8 +74,7 @@ class LocalListener : Listener {
 
         // Permission check
         if (channel.blocksSender(player)) {
-            val msg = SlateChat.instance.config.getString("no_permission") ?: ""
-            player.sendMessage(mm.deserialize(msg))
+            player.sendMessage(Messages.resolve(SlateChat.instance.config, "no_permission", ""))
             return
         }
 

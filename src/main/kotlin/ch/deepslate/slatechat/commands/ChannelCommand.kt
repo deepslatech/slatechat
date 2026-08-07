@@ -3,6 +3,7 @@ package ch.deepslate.slatechat.commands
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.api.Channel
 import ch.deepslate.slatechat.core.api.blocksSender
+import ch.deepslate.slatechat.core.format.Messages
 import ch.deepslate.slatechat.core.integrations.SoftDependency
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.model.Message
@@ -13,7 +14,6 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import com.mojang.brigadier.tree.LiteralCommandNode
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.command.Command as BukkitCommand
 import org.bukkit.command.CommandExecutor
@@ -32,8 +32,6 @@ import java.util.concurrent.CompletableFuture
  *  every Channel as a new object, and quietly no-ops if the channel is later removed from
  *  channels.yml. */
 object ChannelCommand {
-
-    private val mm: MiniMessage = MiniMessage.miniMessage()
 
     fun node(commandName: String): LiteralCommandNode<CommandSourceStack> =
         Commands.literal(commandName)
@@ -111,12 +109,10 @@ object ChannelCommand {
 
         channelFor(commandName) ?: return
 
-        val usage = SlateChat.instance.config
-            .getString("channel_usage_message")
-            ?.replace("<command>", commandName.lowercase())
-            ?: "<red>Usage message missing"
+        val usage = Messages.raw(SlateChat.instance.config, "channel_usage_message", "<red>Usage message missing")
+            .replace("<command>", commandName.lowercase())
 
-        sender.sendMessage(mm.deserialize(usage))
+        sender.sendMessage(Messages.deserialize(usage))
     }
 
     private fun sendMessage(sender: CommandSender, commandName: String, text: String) {
@@ -178,8 +174,5 @@ object ChannelCommand {
     }
 
     private fun msg(path: String) =
-        mm.deserialize(
-            SlateChat.instance.config.getString(path)
-                ?: "<red>Missing message: $path"
-        )
+        Messages.resolve(SlateChat.instance.config, path, "<red>Missing message: $path")
 }
