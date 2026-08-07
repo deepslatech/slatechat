@@ -4,7 +4,7 @@ All notable changes to SlateChat are documented here. Format loosely follows [Ke
 
 The `## [x.y.z]` section matching the version in `gradle.properties` is what the CI pipeline publishes as the GitLab release's patch notes when that file changes on `master` — see [`.gitlab-ci.yml`](.gitlab-ci.yml).
 
-## [1.6.0] - 2026-08-08
+## [1.6.0] - 2026-08-07
 
 ### Added
 
