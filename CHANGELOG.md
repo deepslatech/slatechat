@@ -14,6 +14,8 @@ The `## [x.y.z]` section matching the version in `gradle.properties` is what the
 
 - `Message`'s recipient fan-out (`send()`) was rewritten as a scatter/gather over each online player's own scheduler (new `MessageDelivery`) instead of one thread looping over everyone's location directly — required for the Folia support above. A player disconnecting mid-send, sender or recipient, can no longer leave the read-receipt count hanging or throw the message away silently. The radius/world eligibility check itself moved into a small pure function (new `RecipientEligibility`), which also collapses what used to be the same check written out twice (once for delivery, once for the count) into one place.
 
+## [1.5.0] - 2026-08-06
+
 ### Added
 
 - Bare `http(s)://` URLs typed straight into chat are now clickable automatically (with a hover showing the URL) — no need for the `[text](url)` MineDown syntax, though that still works exactly as before and can still be used for custom link text. Not gated by any permission, matching MineDown's own link syntax.
