@@ -1,0 +1,34 @@
+name: ${project.name}
+version: ${project.version}
+api-version: 1.21
+main: ch.deepslate.slatechat.SlateChat
+author: Deepslate Studios
+website: https://gitlab.com/deepslatech/slatechat
+# Chat delivery (Message.kt/MessageDelivery.kt) is Folia-safe: sender-side formatting runs on
+# the sender's own EntityScheduler, and recipient fan-out runs on each recipient's own -- never
+# reads another region's player state from a foreign thread. This only asserts SlateChat's own
+# Folia-safety; PlaceholderAPI/DiscordSRV/ItemsAdder's is a separate, out-of-scope concern.
+folia-supported: true
+# Commands (ch, chatcolor, slatechat, tell/msg/w, r, socialspy, and one per configured
+# channel) are registered dynamically via Paper's Brigadier lifecycle API -- see
+# CommandRegistrar.kt -- so none of them need declaring here. Paper plugins don't use a
+# `commands:` section at all, unlike classic plugin.yml.
+#
+# Migrated from plugin.yml's `depend`/`softdepend` arrays -- paper-plugin.yml replaces both
+# with one per-dependency block instead.
+# `load: BEFORE` mirrors depend/softdepend's implicit "load the other plugin first" guarantee;
+# `required` is what used to be the depend-vs-softdepend split. `join-classpath` (not set below,
+# defaults to true) is relied on here -- every one of these three is referenced by real
+# compile-time types (ChatPlaceholder, DiscordSrvBridge, ItemsAdderBridge), not just detected
+# by name, so this plugin's classpath genuinely needs each one's classes when present.
+dependencies:
+    server:
+        PlaceholderAPI:
+            load: BEFORE
+            required: true
+        DiscordSRV:
+            load: BEFORE
+            required: false
+        ItemsAdder:
+            load: BEFORE
+            required: false

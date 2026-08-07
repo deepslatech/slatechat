@@ -42,15 +42,28 @@ build-and-release:
 
     - chmod +x gradlew
     - ./gradlew --no-daemon clean build
-    - cp build/libs/SlateChat-*.jar build/libs/SlateChat.jar
 
-    # Publish the jar to this project's Generic Package Registry - a
-    # permanent, versioned URL that release assets can point to.
+    # Two platform jars now, not one -- paper/velocity are separate Gradle subprojects, each
+    # with its own versioned shadow jar (SlateChat-Paper-<version>.jar /
+    # SlateChat-Velocity-<version>.jar, see paper/build.gradle.kts and velocity/build.gradle.kts).
+    # Copy each to an unversioned name too, same trick the old single-jar build used: the
+    # release's permalink/latest/downloads/... URL always has to point at a fixed filename to
+    # keep serving whatever the newest release is.
+    - cp paper/build/libs/SlateChat-Paper-*.jar paper/build/libs/SlateChat-Paper.jar
+    - cp velocity/build/libs/SlateChat-Velocity-*.jar velocity/build/libs/SlateChat-Velocity.jar
+
+    # Publish both jars to this project's Generic Package Registry - permanent, versioned
+    # URLs that the release's asset links point to below.
     - |
-      PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/slatechat/${VERSION}/SlateChat.jar"
+      PAPER_PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/slatechat/${VERSION}/SlateChat-Paper.jar"
       curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-           --upload-file build/libs/SlateChat.jar \
-           "${PACKAGE_URL}"
+           --upload-file paper/build/libs/SlateChat-Paper.jar \
+           "${PAPER_PACKAGE_URL}"
+    - |
+      VELOCITY_PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/slatechat/${VERSION}/SlateChat-Velocity.jar"
+      curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+           --upload-file velocity/build/libs/SlateChat-Velocity.jar \
+           "${VELOCITY_PACKAGE_URL}"
 
     # Pull the "## [$VERSION]" section out of CHANGELOG.md to use as the
     # release description/patch notes, instead of a bare "SlateChat x.y.z"
@@ -67,15 +80,20 @@ build-and-release:
         DESC="SlateChat ${VERSION}"
       fi
 
-    # Create the release (and its tag, since ${TAG} doesn't exist yet) with
-    # a fixed "filepath" so /-/releases/permalink/latest/downloads/SlateChat.jar
-    # always serves whatever the newest release is.
+    # Create the release (and its tag, since ${TAG} doesn't exist yet) with two asset links,
+    # one per platform jar, each with its own fixed "filepath" so
+    # /-/releases/permalink/latest/downloads/SlateChat-Paper.jar and .../SlateChat-Velocity.jar
+    # always serve whatever the newest release is.
     - |
       curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --header "Content-Type: application/json" \
            --data "$(jq -n \
              --arg tag "$TAG" \
              --arg desc "$DESC" \
              --arg ref "$CI_COMMIT_SHA" \
-             --arg url "$PACKAGE_URL" \
-             '{tag_name: $tag, description: $desc, ref: $ref, assets: {links: [{name: "SlateChat.jar", url: $url, filepath: "/SlateChat.jar", link_type: "package"}]}}')" \
+             --arg paperUrl "$PAPER_PACKAGE_URL" \
+             --arg velocityUrl "$VELOCITY_PACKAGE_URL" \
+             '{tag_name: $tag, description: $desc, ref: $ref, assets: {links: [
+               {name: "SlateChat-Paper.jar", url: $paperUrl, filepath: "/SlateChat-Paper.jar", link_type: "package"},
+               {name: "SlateChat-Velocity.jar", url: $velocityUrl, filepath: "/SlateChat-Velocity.jar", link_type: "package"}
+             ]}}')" \
            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"

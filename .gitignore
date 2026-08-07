@@ -5,9 +5,10 @@
 /.idea/
 /target/
 
-# Gradle
-/build/
-/.gradle/
+# Gradle -- no leading slash: multi-module build means every subproject (common/paper/velocity)
+# gets its own build/ dir, not just one at the repo root
+build/
+.gradle/
 
 # Log file
 *.log

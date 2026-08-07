@@ -1,90 +1,30 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
+// Root project owns no source of its own -- it only declares the plugin versions once (`apply
+// false`, each subproject opts into what it actually needs) and the conventions shared by every
+// subproject, so `common`/`paper`/`velocity` don't each repeat a version number that then drifts.
 plugins {
-    kotlin("jvm") version "2.4.10"
-    id("com.gradleup.shadow") version "9.6.1"
+    kotlin("jvm") version "2.4.10" apply false
+    kotlin("kapt") version "2.4.10" apply false
+    id("com.gradleup.shadow") version "9.6.1" apply false
 }
 
-// group/version come from gradle.properties
+// group/version come from gradle.properties -- root-level gradle.properties in a multi-project
+// build only sets these on the ROOT project automatically, subprojects need it propagated
+// explicitly or they'd each default back to Gradle's "unspecified".
+subprojects {
+    group = rootProject.group
+    version = rootProject.version
 
-// ================= REPOSITORIES =================
-repositories {
-    mavenCentral()
+    repositories {
+        mavenCentral()
 
-    // Official PaperMC repository
-    maven("https://repo.papermc.io/repository/maven-public/")
+        // Official PaperMC repository -- both paper module's Paper API and velocity module's
+        // Velocity API are published here
+        maven("https://repo.papermc.io/repository/maven-public/")
 
-    // PlaceholderAPI repository
-    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+        // PlaceholderAPI repository (paper module only, but harmless to share)
+        maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 
-    // Scarsz Nexus (DiscordSRV)
-    maven("https://nexus.scarsz.me/content/groups/public/")
-}
-
-// ================= DEPENDENCIES =================
-dependencies {
-    // Paper API (official server API, no NMS required) - provided by the server at runtime
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
-
-    // Kotlin standard library (needed at runtime, gets shaded into the final jar)
-    implementation(kotlin("stdlib"))
-
-    // PlaceholderAPI (provided by the server if installed)
-    compileOnly("me.clip:placeholderapi:2.11.6")
-
-    // DiscordSRV (provided by the server)
-    compileOnly("com.discordsrv:discordsrv:1.28.0")
-
-    // Test framework -- kotlin("test") resolves to JUnit5 + kotlin.test assertions,
-    // no separate JUnit Jupiter dependency needed
-    testImplementation(kotlin("test"))
-    // compileOnly isn't visible to the test source set by default -- tests that need
-    // Bukkit types (e.g. a fake Permissible) need this repeated here explicitly
-    testImplementation("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-// ================= BUILD CONFIGURATION =================
-
-// Java 21 to match Paper's target - the Kotlin compiler follows the same toolchain
-kotlin {
-    jvmToolchain(21)
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_21)
+        // Scarsz Nexus (DiscordSRV, paper module only)
+        maven("https://nexus.scarsz.me/content/groups/public/")
     }
-}
-
-// Resource filtering for plugin.yml (${project.name} / ${project.version} placeholders,
-// same ${...} syntax Maven resource filtering used, so plugin.yml didn't need to change)
-tasks.processResources {
-    // Declared as a tracked input, not just captured in the expand() closure below -- Gradle's
-    // up-to-date check doesn't see into that closure, so without this a version-only bump in
-    // gradle.properties (nothing else touched) left processResources considering its previous
-    // output still current and skipped re-expanding plugin.yml: the shaded jar's *filename*
-    // picked up the new version (that comes from the archive task itself), but the version:
-    // line actually baked into plugin.yml inside it silently stayed on the old one. Found this
-    // shipping 1.5.0's own jar with a 1.4.0 plugin.yml still inside.
-    inputs.property("projectVersion", project.version.toString())
-    // plugin.yml references ${project.name} / ${project.version}, Maven-style
-    filesMatching("plugin.yml") {
-        expand(mapOf("project" to mapOf("name" to project.name, "version" to project.version)))
-    }
-}
-
-// Shade the Kotlin runtime (and any other implementation deps) into the final jar.
-// The plain `jar` task is disabled so only the shaded jar is produced, avoiding
-// two tasks fighting over the same build/libs/SlateChat-<version>.jar output.
-tasks.named<Jar>("jar") {
-    enabled = false
-}
-
-tasks.shadowJar {
-    archiveClassifier.set("")
-}
-
-tasks.build {
-    dependsOn(tasks.shadowJar)
 }
