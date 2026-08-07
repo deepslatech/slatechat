@@ -2,9 +2,10 @@
 
 # <img src="public/image/icon.webp" alt="" width="32" height="32" align="center" /> SlateChat
 
-> A modular chat plugin for Paper — channels, per-player chat colors, MineDown/MiniMessage formatting, spam & flood protection, DiscordSRV bridging, and ItemsAdder compatibility.
+> A modular chat plugin for Paper and Folia — channels, per-player chat colors, MineDown/MiniMessage formatting, spam & flood protection, DiscordSRV bridging, and ItemsAdder compatibility.
 
 <img alt="platform" src="https://img.shields.io/badge/platform-Paper%201.21.x%20--%2026.x-2c3598?style=for-the-badge&logo=minecraft&logoColor=white&labelColor=1a1b26" />
+<img alt="folia" src="https://img.shields.io/badge/Folia-supported-2c3598?style=for-the-badge&labelColor=1a1b26" />
 <img alt="language" src="https://img.shields.io/badge/language-Kotlin-2c3598?style=for-the-badge&logo=kotlin&logoColor=white&labelColor=1a1b26" />
 <a href="#-license">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-2c3598?style=for-the-badge&labelColor=1a1b26" />
@@ -37,6 +38,8 @@ This README only covers what you need to get it running and building from source
 SlateChat only uses stable Bukkit/Paper API (events, commands, Adventure/MiniMessage) — no NMS, no version-specific internals — so the same jar carries forward across Minecraft releases without changes.
 
 Verified compatible: **Paper 1.21.x through 26.2** (including the version-numbering switch from the old `1.21.x` scheme to the new year-based `26.x` scheme) — the jar compiled against the older `1.21.1` Paper API loads and runs unchanged on a 26.2 server, no recompilation needed.
+
+> **Folia:** Supported as of v1.6.0 (`folia-supported: true`) and verified on a live Folia server — chat delivery only ever touches a player's location/permissions/messaging from the thread that actually owns their region, sender and recipients alike, instead of assuming a single server thread.
 
 > **Java note:** Minecraft 26.1+ requires the server itself to run on **Java 25**, regardless of the plugin. This doesn't change what SlateChat is built with (still Java 21) — it's a requirement for whoever is hosting a 26.1+ server, not something the plugin needs updated for.
 

@@ -9,8 +9,6 @@ import ch.deepslate.slatechat.core.format.MineDownConverter
 import ch.deepslate.slatechat.core.format.MiniMessageRenderer
 import ch.deepslate.slatechat.core.integrations.ItemsAdderBridge
 import ch.deepslate.slatechat.core.integrations.PaperSelectorResolver
-import net.kyori.adventure.audience.Audience
-import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -21,6 +19,14 @@ import org.bukkit.entity.Player
  * collaborator (see core/format and core/integrations) -- this class's job is the sequence
  * and the parts that are genuinely its own (recipient targeting, the actionbar read
  * receipt, filter-event logging), not the formatting/permission/integration logic itself.
+ *
+ * Folia note: everything from [deliver] onward is keyed on `sender` (PlaceholderAPI,
+ * MineDownConverter's permission checks, and -- critically -- [PaperSelectorResolver], which
+ * resolves `<selector>`/`<score>`/`<nbt>` against sender's own location/world), so [send]
+ * schedules onto **sender's own `EntityScheduler`** rather than the global region scheduler --
+ * a player's state may only be touched safely from the thread that currently owns their
+ * region. Fan-out to recipients is delegated to [MessageDelivery], which does the same thing
+ * per recipient for the same reason.
  */
 class Message(
     private val sender: Player,
@@ -30,7 +36,7 @@ class Message(
 
     private var message: String = rawMessage
 
-    // Recorded during prepare(), acted on during sendTo() -- see the comment there for why
+    // Recorded during prepare(), acted on during sendSenderActionBar() -- see there for why
     // this can't just fire an action bar immediately.
     private var colorPermissionDenied: Boolean = false
 
@@ -56,7 +62,7 @@ class Message(
             // strip -- same "no permission" message /chatcolor already uses, but via the
             // action bar instead of a chat line: the message itself still sends normally
             // (just without the color), this is a quiet heads-up, not a rejection. Recorded
-            // here rather than sent immediately -- see sendTo() for why.
+            // here rather than sent immediately -- see sendSenderActionBar() for why.
             if (stripped != message) colorPermissionDenied = true
             message = stripped
         }
@@ -72,53 +78,60 @@ class Message(
 
     /** Step 3 — send */
     fun send() {
-        // Global region thread only for Bukkit actions (Paper's Folia-aware scheduler)
-        Bukkit.getGlobalRegionScheduler().execute(SlateChat.instance) {
-            // Strip styles (bold/italic/etc.) without wiping colors to preserve channel/chat colors
-            val safeMessage = "<bold:false><italic:false><underlined:false><strikethrough:false><obfuscated:false>$message"
-            val formatted = channel.format
-                .replace("<player>", sender.name)
-                .replace("<message>", safeMessage)
-                .replace("<channel>", channel.name)
+        val scheduled = sender.scheduler.execute(
+            SlateChat.instance,
+            { deliver() },
+            { logSenderGone("disconnected before their message could be sent") },
+            1L
+        )
+        // execute() returns false only when sender was *already* retired at call time (e.g.
+        // disconnected in the same tick between prepare() and send()) -- neither callback
+        // above fires in that case.
+        if (!scheduled) logSenderGone("was already offline before their message could be sent")
+    }
 
-            // Apply PlaceholderAPI to the entire formatted string
-            var withPlaceholders = PlaceholderAPI.setPlaceholders(sender, formatted)
+    /** Runs on sender's own owning thread -- see the class doc for why that matters here. */
+    private fun deliver() {
+        // Strip styles (bold/italic/etc.) without wiping colors to preserve channel/chat colors
+        val safeMessage = "<bold:false><italic:false><underlined:false><strikethrough:false><obfuscated:false>$message"
+        val formatted = channel.format
+            .replace("<player>", sender.name)
+            .replace("<message>", safeMessage)
+            .replace("<channel>", channel.name)
 
-            // Convert MineDown syntax to MiniMessage (pass player for permission checks)
-            withPlaceholders = MineDownConverter.convert(withPlaceholders, sender)
-            // Resolve ItemsAdder :emoji: font images, if ItemsAdder is installed
-            withPlaceholders = ItemsAdderBridge.applyFontImages(sender, withPlaceholders)
-            // <br>/\n, hex, legacy, then deserialize -- the shared render pipeline
-            val component = MiniMessageRenderer.render(withPlaceholders)
-            // <selector>/<score>/<nbt> come out of render() as real components, but per
-            // Adventure's own docs they're "rendered serverside" against "platform-defined
-            // context" -- sent as-is via a plain Audience#sendMessage(), a client just falls
-            // back to showing the literal pattern (e.g. "@e[limit=5]") instead of resolved
-            // names, because nothing ever told the platform who/where to resolve against. This
-            // resolves them against the message's sender before anything goes out.
-            val resolvedComponent = PaperSelectorResolver.resolve(component, sender)
+        // Apply PlaceholderAPI to the entire formatted string
+        var withPlaceholders = PlaceholderAPI.setPlaceholders(sender, formatted)
 
-            // Verbose diagnostic logging -- off by default, noisy (dumps the full component tree
-            // as JSON for every message). Toggle with `debug: true` in config.yml.
-            if (SlateChat.instance.config.getBoolean("debug", false)) {
-                SlateChat.instance.logger.info(
-                    "[DEBUG] withPlaceholders=$withPlaceholders | gson=" +
-                        GsonComponentSerializer.gson().serialize(resolvedComponent)
-                )
-            }
+        // Convert MineDown syntax to MiniMessage (pass player for permission checks)
+        withPlaceholders = MineDownConverter.convert(withPlaceholders, sender)
+        // Resolve ItemsAdder :emoji: font images, if ItemsAdder is installed
+        withPlaceholders = ItemsAdderBridge.applyFontImages(sender, withPlaceholders)
+        // <br>/\n, hex, legacy, then deserialize -- the shared render pipeline
+        val component = MiniMessageRenderer.render(withPlaceholders)
+        // <selector>/<score>/<nbt> come out of render() as real components, but per
+        // Adventure's own docs they're "rendered serverside" against "platform-defined
+        // context" -- sent as-is via a plain Audience#sendMessage(), a client just falls
+        // back to showing the literal pattern (e.g. "@e[limit=5]") instead of resolved
+        // names, because nothing ever told the platform who/where to resolve against. This
+        // resolves them against the message's sender before anything goes out.
+        val resolvedComponent = PaperSelectorResolver.resolve(component, sender)
 
-            ConsoleWriter.write(channel, sender, message)
-
-            if (channel.broadcast) {
-                Bukkit.getOnlinePlayers().forEach { sendTo(it, resolvedComponent) }
-            } else {
-                val radius = channel.radius
-                Bukkit.getOnlinePlayers()
-                    .filter { it.world == sender.world }
-                    .filter { it.location.distance(sender.location) <= radius }
-                    .forEach { sendTo(it, resolvedComponent) }
-            }
+        // Verbose diagnostic logging -- off by default, noisy (dumps the full component tree
+        // as JSON for every message). Toggle with `debug: true` in config.yml.
+        DebugLog.log {
+            "withPlaceholders=$withPlaceholders | gson=" + GsonComponentSerializer.gson().serialize(resolvedComponent)
         }
+
+        ConsoleWriter.write(channel, sender, message)
+
+        // Safe now -- we're on sender's own thread.
+        val senderPosition = RecipientEligibility.Position(sender.world.uid, sender.location.x, sender.location.y, sender.location.z)
+        // Safe from any thread -- the server's global player list, not owned by any one region,
+        // unlike an individual player's live location/permission state.
+        val recipients = Bukkit.getOnlinePlayers().toList()
+
+        MessageDelivery(sender, channel, senderPosition, resolvedComponent)
+            .dispatch(recipients) { eligibleCount -> sendSenderActionBar(eligibleCount) }
     }
 
     private fun logFilter(reason: String, detail: String, original: String) {
@@ -126,18 +139,11 @@ class Message(
         Bukkit.getLogger().info("[SlateChat][$reason] ${sender.name}: '$original' (detail: $detail)")
     }
 
-    private fun sendTo(player: Player, component: Component) {
-        val audience: Audience = player
-        audience.sendMessage(component)
+    private fun logSenderGone(detail: String) = DebugLog.log { "${sender.name} $detail" }
 
-        // Only the sender gets an action bar at all -- everyone else was just a message
-        // recipient. Two independent things want that one slot: the "you can't use color"
-        // heads-up from prepare(), and the channel's own read-receipt count below. The client
-        // only ever shows the *last* action bar sent to it, so sending them separately means
-        // whichever fires second silently replaces the first -- collected into one combined
-        // send instead of racing each other for the same line.
-        if (player.uniqueId != sender.uniqueId) return
-
+    /** Called by [MessageDelivery.dispatch]'s completion callback, guaranteed to already be
+     *  running on sender's own thread -- safe to call `sendActionBar` directly. */
+    private fun sendSenderActionBar(eligibleCount: Int) {
         val parts = mutableListOf<String>()
 
         if (colorPermissionDenied) {
@@ -145,31 +151,18 @@ class Message(
         }
 
         if (channel.actionbar) {
-            val count = if (channel.broadcast) {
-                Bukkit.getOnlinePlayers()
-                    .count { it.uniqueId != sender.uniqueId && !it.hasPermission("chat.count.bypass") }
-            } else {
-                Bukkit.getOnlinePlayers()
-                    .count {
-                        it.world == sender.world &&
-                            it.location.distance(sender.location) <= channel.radius &&
-                            it.uniqueId != sender.uniqueId &&
-                            !it.hasPermission("chat.count.bypass")
-                    }
-            }
-
-            val readReceipt = if (count == 0) {
+            val readReceipt = if (eligibleCount == 0) {
                 SlateChat.instance.config.getString("no_one") ?: ""
             } else {
                 SlateChat.instance.config.getString("amount_readed")
-                    ?.replace("<amount>", count.toString()) ?: ""
+                    ?.replace("<amount>", eligibleCount.toString()) ?: ""
             }
 
             if (readReceipt.isNotBlank()) parts += readReceipt
         }
 
         if (parts.isNotEmpty()) {
-            audience.sendActionBar(MiniMessageRenderer.deserialize(parts.joinToString(" <gray>|</gray> ")))
+            sender.sendActionBar(MiniMessageRenderer.deserialize(parts.joinToString(" <gray>|</gray> ")))
         }
     }
 }

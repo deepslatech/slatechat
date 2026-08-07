@@ -6,6 +6,11 @@ author: Deepslate Studios
 website: https://gitlab.com/deepslatech/slatechat
 depend: [PlaceholderAPI]
 softdepend: [DiscordSRV, ItemsAdder]
+# Chat delivery (Message.kt/MessageDelivery.kt) is Folia-safe: sender-side formatting runs on
+# the sender's own EntityScheduler, and recipient fan-out runs on each recipient's own -- never
+# reads another region's player state from a foreign thread. This only asserts SlateChat's own
+# Folia-safety; PlaceholderAPI/DiscordSRV/ItemsAdder's is a separate, out-of-scope concern.
+folia-supported: true
 # Commands (ch, chatcolor, slatechat, and one per configured channel) are registered
 # dynamically via Paper's Brigadier lifecycle API -- see CommandRegistrar.kt -- so none of
 # them need declaring here.

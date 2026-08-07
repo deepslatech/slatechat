@@ -4,7 +4,15 @@ All notable changes to SlateChat are documented here. Format loosely follows [Ke
 
 The `## [x.y.z]` section matching the version in `gradle.properties` is what the CI pipeline publishes as the GitLab release's patch notes when that file changes on `master` — see [`.gitlab-ci.yml`](.gitlab-ci.yml).
 
-## [1.5.0] - 2026-08-06
+## [1.6.0] - 2026-08-08
+
+### Added
+
+- **Full Folia support** (`folia-supported: true` in `plugin.yml`). Chat delivery no longer assumes a single server thread: sender-side formatting (placeholders, MineDown/MiniMessage rendering, `<selector>`/`<score>`/`<nbt>` resolution) runs on the sending player's own region thread, and each recipient — message delivery and the actionbar read-receipt count alike — is handled independently on *their* own region thread, since Folia only allows a player's location/permissions/messaging to be touched by the thread that actually owns them. Verified on a live Folia server: broadcast channels, radius-limited local channels (including recipients on the other side of a region boundary), the read-receipt count, and the "no color permission" heads-up all behave identically to Paper.
+
+### Changed
+
+- `Message`'s recipient fan-out (`send()`) was rewritten as a scatter/gather over each online player's own scheduler (new `MessageDelivery`) instead of one thread looping over everyone's location directly — required for the Folia support above. A player disconnecting mid-send, sender or recipient, can no longer leave the read-receipt count hanging or throw the message away silently. The radius/world eligibility check itself moved into a small pure function (new `RecipientEligibility`), which also collapses what used to be the same check written out twice (once for delivery, once for the count) into one place.
 
 ### Added
 
