@@ -1,5 +1,10 @@
+#       SlateChat by Deepslate Studios
 #
-# Forced focus per world
+#          Chat focus module configuration
+#
+# Forces players in a given world onto a specific channel, automatically, on join and on
+# changing world -- "world:channelCommand" entries, matched against a channel's command
+# (channels.yml), not its name.
 #
 worlds:
     - dummy:global

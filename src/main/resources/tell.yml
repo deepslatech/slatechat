@@ -1,0 +1,57 @@
+#       SlateChat by Deepslate Studios
+#
+#      Private messaging (/tell) configuration
+#
+# - > Whether the module runs at all is set in config.yml (modules.tell.enable) -- this
+#     file is layout/wording only.
+# - > Full support for PlaceholdersAPI on every format below
+# - > Full support for MineDown everywhere
+# - > Native placeholders:
+#   - <player> - Who sent the message
+#   - <target> - Who is receiving the message
+#   - <message> - The message
+#   - <reply> - The clickable [reply] snippet below (reply_button) -- put it wherever you
+#     want it to show up, or leave it out of a format entirely to not show one there
+#
+# One entry, same shape as a channel in channels.yml -- /tell just isn't a channel you can
+# have more than one of.
+#
+tell:
+    # Shown to the sender, i.e. what you see after /tell <player> <message>
+    format_sent: "<gray>[me -> <target>] <white><message>"
+    # Shown to the recipient
+    format_received: "<gray>[<player> -> me] <white><message> <reply>"
+    # Shown to anyone with /socialspy enabled, watching someone else's conversation.
+    # Never shown at all if either side has chat.tell.spy.bypass.
+    format_spy: "<dark_gray>[spy] <player> -> <target>: <message>"
+    # The [reply] button substituted wherever <reply> appears above -- clicking it suggests
+    # "/r " in the player's chat box (doesn't send anything on its own, just fills it in so
+    # they can type their message and hit enter).
+    # Keep the hover/click quoted arguments (the 'text' after show_text:/suggest_command:)
+    # plain, no <tag>s inside them -- a color tag nested *inside* that quoted string trips up
+    # the MiniMessage parser (confirmed: <hover:show_text:'<gray>Click to reply'> rendered as
+    # broken literal text). <gray> around the visible [reply] itself, outside the quotes, is
+    # fine -- that's normal tag content, not a quoted argument.
+    reply_button: "<hover:show_text:'Click to reply'><click:suggest_command:'/r '><gray>[reply]</gray></click></hover>"
+    # Sent to console/log for every tell. Always logged, even when hidden from
+    # socialspy by chat.tell.spy.bypass. Reuses log_to_console/console_format_colors
+    # from config.yml.
+    console_log: "[TELL] <player> -> <target>: <message>"
+    # Should /tell require a permission to use at all?
+    # The node itself is fixed to chat.tell in code, not configurable here.
+    restrict: false
+    # Sent when /tell is used with too few arguments
+    usage: "<red>Usage: /tell <player> <message>"
+    # Sent when /r is used with no message
+    reply_usage: "<red>Usage: /r <message>"
+    # Sent to the sender when the target isn't online (or is vanished and the
+    # sender doesn't have chat.tell.vanish.bypass -- indistinguishable on purpose)
+    target_offline: "<red><target> is not online."
+    # Sent when a player tries to /tell themselves
+    self_tell_blocked: "<red>You cannot message yourself."
+    # Sent to /r when the player has nobody to reply to yet
+    no_reply_target: "<red>You have nobody to reply to."
+    # Sent when /socialspy is toggled on
+    socialspy_on: "<green>Socialspy enabled -- you will now see other players' tells."
+    # Sent when /socialspy is toggled off
+    socialspy_off: "<yellow>Socialspy disabled."

@@ -68,6 +68,12 @@ object SlateCmd {
             SlateChat.useFilter = true
             SlateChat.filterConfig = CustomConfigs.createCustomConfig("filter")
         }
+        if (plugin.config.getBoolean("modules.tell.enable")) {
+            SlateChat.tellConfig = CustomConfigs.createCustomConfig("tell")
+        }
+        if (plugin.config.getBoolean("modules.joinquit.enable")) {
+            SlateChat.joinQuitConfig = CustomConfigs.createCustomConfig("joinquit")
+        }
 
         // Re-evaluate DiscordSRV/ItemsAdder presence
         plugin.detectSoftDependencies()

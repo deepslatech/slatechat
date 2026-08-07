@@ -4,6 +4,8 @@ import ch.deepslate.slatechat.commands.Ch
 import ch.deepslate.slatechat.commands.ChannelCommand
 import ch.deepslate.slatechat.commands.ChatColorCommand
 import ch.deepslate.slatechat.commands.SlateCmd
+import ch.deepslate.slatechat.commands.SocialSpyCommand
+import ch.deepslate.slatechat.commands.TellCommand
 import io.papermc.paper.command.brigadier.Commands
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
 import org.bukkit.plugin.java.JavaPlugin
@@ -56,6 +58,9 @@ object CommandRegistrar {
             commands.register(pluginMeta, SlateCmd.node(), null, emptyList())
             commands.register(pluginMeta, ChatColorCommand.node(), null, emptyList())
             commands.register(pluginMeta, Ch.node(), null, emptyList())
+            commands.register(pluginMeta, TellCommand.node(), null, listOf("msg", "w"))
+            commands.register(pluginMeta, TellCommand.replyNode(), null, emptyList())
+            commands.register(pluginMeta, SocialSpyCommand.node(), null, emptyList())
             ChannelsManager.getAllChannels().forEach { channel ->
                 val name = channel.command.lowercase()
                 commands.register(pluginMeta, ChannelCommand.node(name), null, emptyList())

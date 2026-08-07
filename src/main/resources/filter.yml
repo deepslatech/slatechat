@@ -1,21 +1,19 @@
+#       SlateChat by Deepslate Studios
 #
-# Chat filter module
+#          Chat filter module configuration
+#
 # Replacement is NOT case sensitive!
 #
 
-#
 # Words under this string list will be censored (replaced with asterisks)
-#
 blocked_words:
     - "bitch"
     - "damn"
 
-#
 # The text before the -> will be replaced with everything after the ->
 # Example:
 # - 'barney->swarley'
 #
 # Everytime you type "barney", the text will be replaced with "swarley"
-#
 replace:
     - "barney->swarley"

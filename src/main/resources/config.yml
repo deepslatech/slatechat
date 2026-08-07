@@ -1,65 +1,50 @@
+#       SlateChat by Deepslate Studios
 #
-# Message sent when the player doesnt have permission for
-# a channel or any command of the plugin.
+#            Main configuration
+#
+# Every module has its own configuration file (channels.yml, color.yml, tell.yml, ...) --
+# this file is just the messages/settings that don't belong to any one of them, plus the
+# on/off switch for every module, at the bottom.
+#
+
+#
+#                General messages
+# Not tied to any one command or channel.
 #
 no_permission: "<red>You do not have permission!"
-
-#
-# Message sent to the sender saying the amount of players
-# who readed the player message.
-#
-amount_readed: "<dark_purple><amount> players saw your message!"
-
-#
-# Message sent when no one readed the player message
-#
-no_one: "<red>No one readed your message! :c"
-
-#
-# When console or any non-player tries to execute a command they shouldn't
-#
 players_only: "<red>Only players can execute this command!"
 
 #
+#                Channel messages
+# /ch, per-channel commands (/l, /g, ...), and the read-receipt actionbar.
+#
+# Message sent to the sender saying the amount of players who readed the player message.
+amount_readed: "<dark_purple><amount> players saw your message!"
+# Message sent when no one readed the player message
+no_one: "<red>No one readed your message! :c"
 # Sent when player incorrectly uses /channel
-#
 channel_command_usage: "<red>Usage: /ch <channel>"
-
-#
 # Sent when the player tries to do chat without any text
-#
 channel_usage_message: "<red>Usage: /<command> <message>"
-
-#
 # Message sent when the player changes the main channel with /ch
-# Placeholders:
-# <channelName> - Full name of the channel
-# <channelCommand> - Command of the channel
-#
+# Placeholders: <channelName> - Full name of the channel, <channelCommand> - Command of the channel
 channel_changed: "<green>Channel changed to <channelName> - <channelCommand>"
-
-#
 # Sent when the player do not have permission to use a channel or somehow the channel do not exist
-#
 invalid_channel: "<red>Invalid channel!"
 
 #
+#                /slatechat messages
+#
 # Text sent when plugin is reloaded
-#
 plugin_reloaded: "<green>Plugin reloaded."
-
-#
 # /slatechat wiki -- points whoever ran it to the plugin's documentation.
 # Placeholder: <url> -- the wiki_url below, rendered as a clickable link
-#
 wiki_message: "<green>Documentation: <url>"
-#
 # The link /slatechat wiki opens.
-#
 wiki_url: "https://deepslate.ch/docs/plugins/slatechat"
 
 #
-# Update checker messages (see modules.update_checker)
+#                Update checker messages (see modules.update_checker)
 # Placeholders: <version> - the newer version found, <current> - the version you're running
 #
 update_available: "<yellow>A new SlateChat version (<green><version></green>) is available! You are running <red><current></red>."
@@ -79,76 +64,42 @@ update_console_up_to_date: "<gray>You are running the latest version (<green><cu
 update_console_check_failed: "<red>Could not check for updates."
 
 #
+#                Console logging
+#
 # Should all chat messages be sent to console?
-#
 log_to_console: true
-
-#
 # Message send to console when someone uses chat
-# Placeholders:
-# <channel> - Full channel name
-# <channelCmd> - Channel command
-# <player> - The player who sent the message
-# <message> - The message itself
-# Any PAPI placeholder
-#
+# Placeholders: <channel> - Full channel name, <channelCmd> - Channel command,
+# <player> - The player who sent the message, <message> - The message itself, any PAPI placeholder
 console_log: "[<channel>] <player>> <message>"
-
-#
 # If true, colors/formatting render as real ANSI escape codes in the console
 # (and log file) instead of plain text -- same MiniMessage tags as the chat
 # message, just rendered for a terminal instead of a client. Automatically
 # falls back to plain text if the terminal/log target doesn't support ANSI.
 # Hover/click text never shows up in console either way, on or off.
-#
 console_format_colors: false
 
+#
+#                Diagnostics
 #
 # Verbose diagnostic logging -- logs the fully processed message string plus
 # the raw JSON of the component sent to players, for every single chat
 # message. Noisy; only turn on while troubleshooting a rendering issue.
-#
 debug: false
 
 #
-# Enable or disable plugin components here
-# Every module have its own configuration file
-# so you will not get distracted with useless or unrelated
-# things while setting up the plugin.
+#                Modules
+# Enable or disable plugin components here. Every module has its own configuration file
+# so you will not get distracted with useless or unrelated things while setting up the plugin.
 #
 modules:
+    # ----- Chat -----
     #
     # Chat color module
     # Players can choose their own chatcolor
     # either normal (&c) or hexadecimal (#4DC3FF)
     #
     chatcolor: true
-    #
-    # DiscordSRV integration
-    # if you would like to enable integration with DiscordSRV,
-    # enable this option.
-    # The plugin will send chat messages from channels as configured in DiscordSRV.
-    # but it will NOT receive messages from Discord and send to the chat.
-    #
-    discordsrv: true
-    # Optional: forward chat from plugin to DiscordSRV, per-channel as mapped in DiscordSRV's
-    # own "Channels" config option (default false to avoid duplicates). Channels not listed
-    # there in DiscordSRV's config are not forwarded.
-    discordsrv_send: false
-    #
-    # ItemsAdder integration
-    # Resolves ItemsAdder's :emoji_name: shorthand (and other font images) found in chat
-    # messages or baked into channel formats, so they render instead of showing as literal
-    # text. Only takes effect if ItemsAdder is installed; has no effect otherwise.
-    #
-    itemsadder: true
-    #
-    # Update checker
-    # Checks GitLab for a newer SlateChat release on startup (async, never blocks
-    # startup or chat). Logs to console if outdated; players with chat.update also
-    # get a chat notice on join. Safe to disable if you don't want it phoning home.
-    #
-    update_checker: true
     #
     # Chat focus modules
     # Players can choose a chat to default speak on or
@@ -161,6 +112,24 @@ modules:
     # Disable if you don't need this
     #
     filter: true
+    #
+    # Private messaging (/tell, /msg, /w, /r) + /socialspy.
+    # Formats and messages are configured separately in tell.yml, so toggling
+    # this on/off doesn't get mixed up with layout settings.
+    # Off by default -- plenty of servers already run a tell/msg solution
+    # (EssentialsX, etc.), and this shouldn't start competing with it uninvited.
+    #
+    tell:
+        enable: false
+    #
+    # Custom join/quit/first-join messages.
+    # Formats and messages are configured separately in joinquit.yml, so toggling
+    # this on/off doesn't get mixed up with layout settings.
+    # Off by default -- same reasoning as tell above, plenty of servers already
+    # have their own join/quit message solution.
+    #
+    joinquit:
+        enable: false
     #
     # Chat formatting
     #
@@ -189,3 +158,40 @@ modules:
         # Always send a message with the first letter capitalized
         #
         title_format: false
+        #
+        # Whether the <pride> MiniMessage tag can be used in chat at all (still needs
+        # chat.colored either way). Independent of that permission -- this is a per-server
+        # policy switch, not a per-player one, for servers that need it off entirely
+        # regardless of who's typing.
+        #
+        pride: true
+
+    # ----- Integrations -----
+    #
+    # DiscordSRV integration
+    # if you would like to enable integration with DiscordSRV,
+    # enable this option.
+    # The plugin will send chat messages from channels as configured in DiscordSRV.
+    # but it will NOT receive messages from Discord and send to the chat.
+    #
+    discordsrv: true
+    # Optional: forward chat from plugin to DiscordSRV, per-channel as mapped in DiscordSRV's
+    # own "Channels" config option (default false to avoid duplicates). Channels not listed
+    # there in DiscordSRV's config are not forwarded.
+    discordsrv_send: false
+    #
+    # ItemsAdder integration
+    # Resolves ItemsAdder's :emoji_name: shorthand (and other font images) found in chat
+    # messages or baked into channel formats, so they render instead of showing as literal
+    # text. Only takes effect if ItemsAdder is installed; has no effect otherwise.
+    #
+    itemsadder: true
+
+    # ----- Maintenance -----
+    #
+    # Update checker
+    # Checks GitLab for a newer SlateChat release on startup (async, never blocks
+    # startup or chat). Logs to console if outdated; players with chat.update also
+    # get a chat notice on join. Safe to disable if you don't want it phoning home.
+    #
+    update_checker: true

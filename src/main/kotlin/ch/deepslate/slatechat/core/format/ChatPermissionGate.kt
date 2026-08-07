@@ -19,7 +19,7 @@ object ChatPermissionGate {
     // but a raw <red>/<gradient:...>/<shadow:...> tag used to sail straight through to
     // mm.deserialize() untouched. Formatting (bold/italic/...), click, hover, keybind,
     // insert, font, lang and head are NOT color tags and stay ungated here on purpose --
-    // see docs/permissions.md.
+    // see https://deepslate.ch/docs/plugins/slatechat/permissions.
     //
     // "reset" rides along here too, even though it's not a color by itself: the channel
     // format and the player's message are one single MiniMessage string by the time this
@@ -69,6 +69,13 @@ object ChatPermissionGate {
         Pattern.CASE_INSENSITIVE
     )
 
+    // Its own pattern, separate from COLOR_TAG_NAMES/MINIMESSAGE_COLOR_TAG_PATTERN above --
+    // that one's gated by chat.colored (a per-player permission), this one by
+    // modules.chatformat.pride in config.yml (a per-server policy switch, see Message.kt/
+    // Tell.kt's prepare()) -- independent axes, a player can have chat.colored on a server
+    // that's still turned this off specifically.
+    private val PRIDE_TAG_PATTERN: Pattern = Pattern.compile("</?pride(:[^<>]*)?>", Pattern.CASE_INSENSITIVE)
+
     /**
      * Removes raw legacy (&c), HEX (#RRGGBB), and raw MiniMessage color-family tags
      * (<red>, <gradient:...>, <rainbow>, <shadow:...>, <transition:...>, <pride:...>, <#fff>).
@@ -87,4 +94,9 @@ object ChatPermissionGate {
 
     fun stripAdvancedTags(text: String): String =
         MINIMESSAGE_ADVANCED_TAG_PATTERN.matcher(text).replaceAll("")
+
+    /** Removes just `<pride:...>`/`</pride>` -- unlike [stripColorTags] this only ever
+     *  targets the one tag, leaving any text it wrapped (and every other color tag) alone. */
+    fun stripPrideTag(text: String): String =
+        PRIDE_TAG_PATTERN.matcher(text).replaceAll("")
 }

@@ -3,9 +3,11 @@ package ch.deepslate.slatechat.commands
 import me.clip.placeholderapi.PlaceholderAPI
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
+import ch.deepslate.slatechat.core.format.MinecraftColors
 import ch.deepslate.slatechat.core.format.MineDownConverter
 import ch.deepslate.slatechat.core.format.Messages
 import ch.deepslate.slatechat.core.format.MiniMessageRenderer
+import ch.deepslate.slatechat.gui.ChatColorMenu
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.tree.LiteralCommandNode
@@ -14,6 +16,12 @@ import io.papermc.paper.command.brigadier.Commands
 import org.bukkit.entity.Player
 import java.util.regex.Pattern
 
+/**
+ * `/chatcolor <color>` sets it directly; `/chatcolor` with no argument opens [ChatColorMenu]
+ * instead (used to just print a usage message -- see [setColor]). [apply]/[applyClear] are
+ * the one shared path both the typed command and a menu click go through, so permission
+ * checks and confirmation messages can never drift between the two entry points.
+ */
 object ChatColorCommand {
 
     // HEX needs full 6 digits to avoid ambiguous MiniMessage parsing
@@ -22,6 +30,15 @@ object ChatColorCommand {
 
     val LEGACY: Pattern =
         Pattern.compile("&([0-9a-fA-F])")
+
+    // MiniMessage's own bracketed forms -- <#rrggbb> for hex, <red>/<dark_aqua>/etc. for the
+    // 16 named colors (validated against MinecraftColors.NAMES below, not just "looks
+    // tag-shaped" -- <foobar> still has to be rejected).
+    val MINIMESSAGE_HEX: Pattern =
+        Pattern.compile("<#([0-9a-fA-F]{6})>")
+
+    val MINIMESSAGE_NAMED: Pattern =
+        Pattern.compile("<([a-z_]+)>")
 
     fun node(): LiteralCommandNode<CommandSourceStack> =
         Commands.literal("chatcolor")
@@ -47,23 +64,32 @@ object ChatColorCommand {
             return
         }
 
+        if (input != null) {
+            apply(sender, input)
+            return
+        }
+
+        // Bare /chatcolor used to just print "type a color" -- opening the picker is strictly
+        // more useful for the exact same permission this always required.
+        if (!sender.hasPermission("chat.setcolor")) {
+            sender.sendMessage(msg("no_permission"))
+            return
+        }
+        ChatColorMenu.open(sender)
+    }
+
+    /** Sets [sender]'s chat color to [input] (or clears it, if [input] matches one of
+     *  color.yml's `clear_keywords`) -- the one path both [setColor] and a
+     *  [ChatColorMenu] click go through. */
+    fun apply(sender: Player, input: String) {
         if (!sender.hasPermission("chat.setcolor")) {
             sender.sendMessage(msg("no_permission"))
             return
         }
 
-        if (input == null) {
-            sender.sendMessage(msg("no_arg"))
-            return
-        }
-
-        val chatPlayer = ChatPlayerManager.get(sender)
-
-        // Clear color (configurable keywords in color.yml)
         val clearKeywords = SlateChat.colorsConfig.getStringList("clear_keywords")
         if (clearKeywords.any { input.equals(it, true) }) {
-            chatPlayer.color = ""
-            sender.sendMessage(msg("removed"))
+            applyClear(sender)
             return
         }
 
@@ -72,14 +98,27 @@ object ChatColorCommand {
             return
         }
 
-        // Validate format
         if (!validate(input)) {
             sender.sendMessage(msg("invalid"))
             return
         }
 
-        chatPlayer.color = input
+        ChatPlayerManager.get(sender).color = input
+        sendSuccess(sender)
+    }
 
+    /** Clears [sender]'s chat color back to the channel's own default. */
+    fun applyClear(sender: Player) {
+        if (!sender.hasPermission("chat.setcolor")) {
+            sender.sendMessage(msg("no_permission"))
+            return
+        }
+
+        ChatPlayerManager.get(sender).color = ""
+        sender.sendMessage(msg("removed"))
+    }
+
+    private fun sendSuccess(sender: Player) {
         val successRaw = SlateChat.colorsConfig.getString("success") ?: "<green>Color updated!"
         var withPlaceholders = PlaceholderAPI.setPlaceholders(sender, successRaw)
 
@@ -94,14 +133,17 @@ object ChatColorCommand {
         sender.sendMessage(Messages.deserialize(converted))
     }
 
-    private fun validate(hexColor: String): Boolean {
+    private fun validate(input: String): Boolean {
         val rgbEnabled = SlateChat.colorsConfig.getBoolean("enable_rgb")
 
-        return when {
-            rgbEnabled && RGB.matcher(hexColor).matches() -> true
-            LEGACY.matcher(hexColor).matches() -> true
-            else -> false
-        }
+        if (rgbEnabled && RGB.matcher(input).matches()) return true
+        if (LEGACY.matcher(input).matches()) return true
+        if (rgbEnabled && MINIMESSAGE_HEX.matcher(input).matches()) return true
+
+        val named = MINIMESSAGE_NAMED.matcher(input)
+        if (named.matches()) return named.group(1) in MinecraftColors.NAMES
+
+        return false
     }
 
     private fun msg(path: String) =

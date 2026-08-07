@@ -7,6 +7,8 @@ import ch.deepslate.slatechat.core.managers.CustomConfigs
 import ch.deepslate.slatechat.core.managers.FocusManager
 import ch.deepslate.slatechat.core.managers.UpdateChecker
 import ch.deepslate.slatechat.core.placeholders.ChatPlaceholder
+import ch.deepslate.slatechat.gui.ChatColorMenuListener
+import ch.deepslate.slatechat.gui.HexColorMenuListener
 import ch.deepslate.slatechat.listeners.ChatPlayerListener
 import ch.deepslate.slatechat.listeners.LocalListener
 import org.bukkit.configuration.file.FileConfiguration
@@ -22,6 +24,8 @@ class SlateChat : JavaPlugin() {
         lateinit var colorsConfig: FileConfiguration
         lateinit var fConfig: FileConfiguration
         lateinit var filterConfig: FileConfiguration
+        lateinit var tellConfig: FileConfiguration
+        lateinit var joinQuitConfig: FileConfiguration
 
         var useFilter: Boolean = false
 
@@ -66,12 +70,24 @@ class SlateChat : JavaPlugin() {
             filterConfig = CustomConfigs.createCustomConfig("filter")
         }
 
+        // Tell (/tell, /msg, /w, /r, /socialspy) module
+        if (config.getBoolean("modules.tell.enable")) {
+            tellConfig = CustomConfigs.createCustomConfig("tell")
+        }
+
+        // Join/quit/first-join messages module
+        if (config.getBoolean("modules.joinquit.enable")) {
+            joinQuitConfig = CustomConfigs.createCustomConfig("joinquit")
+        }
+
         // DiscordSRV / ItemsAdder hooks
         detectSoftDependencies()
 
         // Events
         server.pluginManager.registerEvents(LocalListener(), this)
         server.pluginManager.registerEvents(ChatPlayerListener(), this)
+        server.pluginManager.registerEvents(ChatColorMenuListener(), this)
+        server.pluginManager.registerEvents(HexColorMenuListener(), this)
 
         // Update checker (async, fail-silent)
         UpdateChecker.check()

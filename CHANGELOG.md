@@ -4,6 +4,21 @@ All notable changes to SlateChat are documented here. Format loosely follows [Ke
 
 The `## [x.y.z]` section matching the version in `gradle.properties` is what the CI pipeline publishes as the GitLab release's patch notes when that file changes on `master` — see [`.gitlab-ci.yml`](.gitlab-ci.yml).
 
+## [1.7.0] - 2026-08-07
+
+### Added
+
+- **Private messaging**: `/tell` (aliases `/msg`, `/w`), `/r` to reply to whoever you last exchanged a tell with (either direction), and `/socialspy` for staff to watch other players' tells. Standalone, same-server only for now. **Off by default** (`modules.tell.enable: false`) — plenty of servers already run their own tell/msg solution and this shouldn't start competing with it uninvited. Formats and messages live in a new `tell.yml`. The recipient's copy includes a clickable `[reply]` by default (`<reply>` placeholder, `reply_button` in `tell.yml`). A vanished player (any vanish plugin — detected via `Player#canSee`, not a specific plugin's own convention) never shows up in tab-complete or as a reachable target, indistinguishable from being offline, unless the sender has `chat.tell.vanish.bypass`. `chat.tell.spy.bypass` makes a player's tells fully invisible to `/socialspy` watchers (not just redacted) while still always logging to console. When enabled, `/tell` itself is open to everyone unless `restrict: true` in `tell.yml`, in which case it needs `chat.tell` — that node, like every other one this release adds, is hardcoded rather than configurable, so a typo can never silently break the command server-wide.
+- **Chat color GUI**: bare `/chatcolor` (still needs `chat.setcolor`) now opens a picker instead of printing a usage message — the 16 standard colors as dyed leather chestplates (a real RGB match per color, not an approximated wool/dye swatch), a reset button, and a book that opens an anvil-based hex picker with a live color preview as you type. Typed `/chatcolor <color>` also now accepts MiniMessage color tags (`<red>`, `<#4dc3ff>`), not just legacy `&c`/hex `#rrggbb`. The book/hex-picker can be turned off (`menu.hex_picker: false`) or pointed at a server's own custom GUI command instead (`custom` + `menu.hex_picker_command`) — useful since Paper has no way to give an already-open anvil a real title, so a custom-font GUI-texture background can't apply to that one screen the way it can the rest of the menu. Every icon in both screens is reskinnable per-role through ItemsAdder (`menu.itemsadder.*` in `color.yml`), falling back to the plain vanilla item whenever ItemsAdder isn't installed or the configured ID isn't found.
+- **Join/quit/first-join messages**: custom `join`/`quit`/`first_join` broadcasts (new `joinquit.yml`). **Off by default** (`modules.joinquit.enable: false`), same reasoning as tell above — plenty of servers already have their own join/quit message plugin. `<player>` is always available, `<online>`/`<max>` are supported but left out of the shipped defaults. `chat.join.bypass` silences all three for a player, in either direction — covers vanished staff without needing to detect any particular vanish plugin's state.
+- [Paper Hangar](https://hangar.papermc.io/DeepslateStudios/SlateChat) listed alongside the existing download page and GitLab Releases as an official distribution channel.
+
+### Changed
+
+- Full documentation moved off this repo's own `docs/` (now removed) onto [deepslate.ch](https://deepslate.ch/docs/plugins/slatechat) as the single canonical source, instead of two copies that could drift out of sync with each other.
+- `config.yml`, and the other module config files, reorganized into clearly labeled sections (general/channel/update-checker/console messages, then modules grouped by Chat/Integrations/Maintenance) — no keys renamed or moved, purely cosmetic after several releases' worth of additions had piled up with no structure.
+- ItemsAdder's `:emoji_name:` tab-complete/suggestion logic, previously private to `ChannelCommand`, extracted into a shared `EmojiSuggestions` so `/tell` could reuse it instead of a second copy.
+
 ## [1.6.0] - 2026-08-07
 
 ### Added

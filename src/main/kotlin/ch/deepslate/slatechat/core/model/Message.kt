@@ -66,6 +66,11 @@ class Message(
             if (stripped != message) colorPermissionDenied = true
             message = stripped
         }
+        // Independent of chat.colored above -- a per-server policy switch, not a
+        // per-player permission, see ChatPermissionGate.stripPrideTag's own doc.
+        if (!SlateChat.instance.config.getBoolean("modules.chatformat.pride", true)) {
+            message = ChatPermissionGate.stripPrideTag(message)
+        }
         if (!sender.hasPermission("chat.cosmetic")) {
             message = ChatPermissionGate.stripCosmeticTags(message)
         }

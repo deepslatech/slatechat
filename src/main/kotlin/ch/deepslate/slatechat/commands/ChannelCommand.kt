@@ -4,13 +4,11 @@ import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.api.Channel
 import ch.deepslate.slatechat.core.api.blocksSender
 import ch.deepslate.slatechat.core.format.Messages
-import ch.deepslate.slatechat.core.integrations.SoftDependency
+import ch.deepslate.slatechat.core.integrations.EmojiSuggestions
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.model.Message
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.StringArgumentType
-import com.mojang.brigadier.suggestion.Suggestions
-import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import com.mojang.brigadier.tree.LiteralCommandNode
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
@@ -20,13 +18,13 @@ import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.Player
-import java.util.concurrent.CompletableFuture
 
 /** Per-channel command (`/g`, `/l`, ...), one instance registered per configured channel via
  *  [node] (the normal path -- see [ch.deepslate.slatechat.core.managers.CommandRegistrar]) or,
  *  for a channel command that's new since boot, [legacyExecutor] (the reflection fallback --
  *  see [ch.deepslate.slatechat.core.managers.LegacyCommandRegistrar]). Both share the exact
- *  same [sendUsage]/[sendMessage]/[suggestEmoji] logic below; the only difference is how
+ *  same [sendUsage]/[sendMessage] logic below (and both defer emoji tab-completion to
+ *  [ch.deepslate.slatechat.core.integrations.EmojiSuggestions]); the only difference is how
  *  Bukkit hands the command off. Looks its [Channel] up by `commandName` at execution time
  *  rather than closing over one, so it keeps working across `/slatechat reload` rebuilding
  *  every Channel as a new object, and quietly no-ops if the channel is later removed from
@@ -44,7 +42,7 @@ object ChannelCommand {
             .executes { ctx -> sendUsage(ctx.source.sender, commandName); Command.SINGLE_SUCCESS }
             .then(
                 Commands.argument("message", StringArgumentType.greedyString())
-                    .suggests { _, builder -> suggestEmoji(builder) }
+                    .suggests { _, builder -> EmojiSuggestions.suggest(builder) }
                     .executes { ctx ->
                         sendMessage(ctx.source.sender, commandName, StringArgumentType.getString(ctx, "message"))
                         Command.SINGLE_SUCCESS
@@ -55,7 +53,7 @@ object ChannelCommand {
     /**
      * Legacy `CommandExecutor`/`TabCompleter` adapter for
      * [ch.deepslate.slatechat.core.managers.LegacyCommandRegistrar] -- delegates to the exact
-     * same [sendUsage]/[sendMessage]/[suggestEmoji] logic [node] uses. Unlike [node]'s own
+     * same [sendUsage]/[sendMessage] logic [node] uses. Unlike [node]'s own
      * `.requires()`, this path can't hide the command from tab-complete/help via a native
      * permission field the same way -- `blocksSender()` inside sendUsage/sendMessage still
      * enforces it correctly either way, this only affects discoverability for a restricted
@@ -91,7 +89,7 @@ object ChannelCommand {
             if (!current.startsWith(":")) return emptyList()
 
             val prefix = current.removePrefix(":")
-            return itemsAdderEmojiNames()
+            return EmojiSuggestions.names()
                 .filter { it.startsWith(prefix, ignoreCase = true) }
                 .sorted()
                 .map { ":$it:" }
@@ -129,47 +127,6 @@ object ChannelCommand {
                 .validate()
                 .prepare()
                 .send()
-        }
-    }
-
-    /**
-     * Suggests ItemsAdder `:emoji_name:` completions for the word currently being typed,
-     * matching the same suggestions the vanilla chat box already offers via ItemsAdder's
-     * own client-side chat completions -- those don't reach command arguments on their own,
-     * since commands use Brigadier's separate tab-complete protocol.
-     *
-     * The "message" argument is a single greedy string, so `builder.remaining` is everything
-     * typed so far, not just the current word -- offset a fresh builder to the last space to
-     * suggest only for the word actually being typed.
-     */
-    private fun suggestEmoji(builder: SuggestionsBuilder): CompletableFuture<Suggestions> {
-        if (!SlateChat.isItemsAdder) return builder.buildFuture()
-
-        val remaining = builder.remaining
-        val lastSpace = remaining.lastIndexOf(' ')
-        val current = remaining.substring(lastSpace + 1)
-        if (!current.startsWith(":")) return builder.buildFuture()
-
-        val prefix = current.removePrefix(":")
-        val wordBuilder = builder.createOffset(builder.start + lastSpace + 1)
-        itemsAdderEmojiNames()
-            .filter { it.startsWith(prefix, ignoreCase = true) }
-            .sorted()
-            .forEach { wordBuilder.suggest(":$it:") }
-
-        return wordBuilder.buildFuture()
-    }
-
-    /** Bare (non-namespaced) font image names registered in ItemsAdder, via reflection. */
-    private fun itemsAdderEmojiNames(): Set<String> {
-        return SoftDependency.tryOrElse(emptySet()) {
-            val cls = Class.forName("dev.lone.itemsadder.api.FontImages.FontImageWrapper")
-            val getIds = cls.getMethod("getNamespacedIdsInRegistry")
-            @Suppress("UNCHECKED_CAST")
-            val namespacedIds = getIds.invoke(null) as Set<String>
-            namespacedIds.mapNotNullTo(HashSet()) { id ->
-                id.substringAfter(':', missingDelimiterValue = "").ifEmpty { null }
-            }
         }
     }
 

@@ -1,0 +1,27 @@
+#       SlateChat by Deepslate Studios
+#
+#      Join/quit messages configuration
+#
+# - > Whether the module runs at all is set in config.yml (modules.joinquit.enable) -- this
+#     file is layout/wording only.
+# - > Full support for PlaceholdersAPI and MiniMessage
+# - > Native placeholders:
+#   - <player> - Who joined/left
+#   - <online> - Current online player count (not used by the defaults below, add it if you want it)
+#   - <max> - Server's max player slots (same -- opt-in, not in the defaults)
+#
+# Players with chat.join.bypass never trigger any of these three, regardless of format --
+# same permission for join, quit, and first_join. Meant for staff (who are very likely
+# joining vanished anyway) rather than something that needs its own vanish-plugin detection.
+#
+# One entry, same shape as tell.yml -- there's only ever one of these, not a list like
+# channels.yml.
+#
+joinquit:
+    # Shown when a returning player joins. Leave blank ("") to suppress entirely.
+    join: "<yellow><player> joined the game."
+    # Shown when a player leaves. Leave blank ("") to suppress entirely.
+    quit: "<yellow><player> left the game."
+    # Shown instead of `join` the very first time a player ever logs in. Leave blank ("") to
+    # suppress entirely (or to just fall back to a plain join for new players too).
+    first_join: "<green>Welcome <player> to the server for the first time!"

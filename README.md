@@ -27,9 +27,9 @@
 
 ## 📌 Overview
 
-**SlateChat** replaces vanilla chat with a channel-based system driven by simple, per-channel YAML formats — local (radius/world) and global channels out of the box, plus your own custom ones. On top of chat routing it ships optional modules for per-player chat colors, a chat "focus" system, word filtering, spam & flood protection, a one-way DiscordSRV bridge, and ItemsAdder compatibility, each toggled independently.
+**SlateChat** replaces vanilla chat with a channel-based system driven by simple, per-channel YAML formats — local (radius/world) and global channels out of the box, plus your own custom ones. On top of chat routing it ships optional modules for per-player chat colors (with a GUI picker), private messages with `/socialspy`, custom join/quit/first-join messages, a chat "focus" system, word filtering, spam & flood protection, a one-way DiscordSRV bridge, and ItemsAdder compatibility, each toggled independently.
 
-This README only covers what you need to get it running and building from source. Everything else — full syntax guide, every config option, every permission node — lives in [`docs/`](docs), indexed below.
+This README only covers what you need to get it running and building from source. Everything else — full syntax guide, every config option, every permission node — lives on the [full documentation site](https://deepslate.ch/docs/plugins/slatechat), the canonical source going forward (this repo no longer carries its own copy under `docs/`).
 
 ---
 
@@ -60,10 +60,10 @@ Verified compatible: **Paper 1.21.x through 26.2** (including the version-number
 
 ## 🚀 Quick start
 
-1. Grab `SlateChat.jar` from the [official downloads](https://deepslate.ch/resources/slatechat) or [GitLab Releases](https://gitlab.com/deepslatech/slatechat/-/releases).
+1. Grab `SlateChat.jar` from the [official downloads](https://deepslate.ch/resources/slatechat), [Paper Hangar](https://hangar.papermc.io/DeepslateStudios/SlateChat), or [GitLab Releases](https://gitlab.com/deepslatech/slatechat/-/releases).
 2. Drop it into `plugins/`, alongside [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) (required — SlateChat won't load without it).
 3. Start the server once to generate `config.yml`, `channels.yml`, `color.yml`, `filter.yml` and `focus.yml` in `plugins/SlateChat/`.
-4. Edit to taste (see [`docs/configuration.md`](docs/configuration.md)), then `/slatechat reload` — no restart needed.
+4. Edit to taste (see the [configuration reference](https://deepslate.ch/docs/plugins/slatechat/configuration)), then `/slatechat reload` — no restart needed.
 
 ---
 
@@ -83,16 +83,7 @@ Requires **Java 21** to build (matches the `1.21.1` Paper API target — see [Co
 
 ## 📚 Documentation
 
-| File                                                          | Covers                                                                    |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| [`docs/configuration.md`](docs/configuration.md)                 | Every option in `config.yml`, `channels.yml`, and the other module configs, plus SlateChat's own placeholders |
-| [`docs/formatting.md`](docs/formatting.md)                       | Everyday MineDown/MiniMessage syntax — colors, links, hover, gradients     |
-| [`docs/formatting-advanced.md`](docs/formatting-advanced.md)     | Shadow color, transition, pride, and raw MiniMessage tags (keybind, insert, NBT, and more) for `channels.yml` formats |
-| [`docs/colors.md`](docs/colors.md)                               | The 16 legacy colors — chat codes, MiniMessage tags, hex values            |
-| [`docs/commands.md`](docs/commands.md)                           | Every command SlateChat registers                                          |
-| [`docs/permissions.md`](docs/permissions.md)                     | Every permission node SlateChat checks, in one place                       |
-
-The same content is also mirrored on the [full documentation site](https://deepslate.ch/docs/plugins/slatechat), with nicer navigation.
+All of it — configuration reference, MineDown/MiniMessage syntax, colors, commands, permissions — lives on **[deepslate.ch/docs/plugins/slatechat](https://deepslate.ch/docs/plugins/slatechat)**. That site is the single canonical source; this repo doesn't keep its own copy under `docs/` anymore, so it can't drift out of sync with itself.
 
 ---
 

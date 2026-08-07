@@ -1,26 +1,102 @@
+#       SlateChat by Deepslate Studios
+#
+#          Chat color module configuration
+#
+
+#
+#                Behavior
 #
 # If you server isn't 1.16, this change will take no effect
 # Disable if you want to remove RGB from /chatcolor
 # It will only allow vanilla color codes instead
-#
 enable_rgb: true
 # Keywords to clear/remove the chat color
 clear_keywords:
     - "clear"
     - "remove"
     - "reset"
+
 #
-# Messages
+#                Messages
 #
 # Console can't choose a color
 only_players: "<red>Avaliable only for players!"
 # Sent when the player lacks chat.setcolor or chat.colored
 no_permission: "<red>You do not have permission!"
-# No argument provided on command
-no_arg: "<red>Type an color! /chatcolor #<color>"
 # Chat color removed
 removed: "<green>Your chat color was removed!"
 # Invalid HEX color
 invalid: "<red>Type an valid hex color! /chatcolor #<color>"
 # Chatcolor changed
 success: "<green>The color of your chat was changed to %chat_color%this<green>."
+
+#
+#                GUI
+# /chatcolor with no argument opens this instead of printing a usage message. Requires
+# chat.setcolor to open, same permission the command itself needs. The grid layout (which
+# 16 colors, dark/normal pairing) is fixed -- only the text and item skins below are yours
+# to change.
+#
+menu:
+    title: "<dark_gray>Choose your chat color"
+    # Name shown on the reset/clear button
+    reset_name: "<gray>Reset to default"
+    # Name shown on the book that opens the hex picker below
+    hex_button_name: "<yellow>Custom hex color..."
+    # Title of the hex picker (an anvil -- type a color into the rename field)
+    hex_title: "<dark_gray>Type a hex color"
+    # Shown on the item sitting in the hex picker's input slot
+    hex_prompt: "<gray>Type a hex code, e.g. #4DC3FF"
+    #
+    # The book (hex picker) can be: true (SlateChat's own anvil, the default), false (the
+    # book doesn't appear at all), or custom (the book stays, but runs hex_picker_command as
+    # the player instead of opening the anvil).
+    #
+    # Why "custom" exists: the anvil is the only built-in Minecraft inventory with a live
+    # text-input field (needed for the hex picker's type-and-see-it-preview), but unlike
+    # every other screen in this GUI, Paper's API has no way to give an *already-open* anvil
+    # a real Component title (only a legacy string, after the fact) -- so the custom-font
+    # GUI-texture trick that works on this menu's own title can't apply to the anvil
+    # specifically. If that matters to you, point hex_picker at your own GUI plugin's "open"
+    # command instead (one with a fully custom-textured menu of its own) rather than
+    # SlateChat reaching past Paper's own API to force a title onto the anvil.
+    #
+    hex_picker: true
+    # Only read when hex_picker is "custom" above. Run as whichever player clicked the book
+    # (leading "/" optional, stripped either way).
+    hex_picker_command: ""
+    #
+    # Optional ItemsAdder reskin. Each value below is a namespaced ItemsAdder item ID
+    # ("namespace:id") -- if set, ItemsAdder is installed, and that ID is actually
+    # registered, its item is used as the icon instead of the plain vanilla one. Left blank
+    # (the default), not installed, or the ID isn't found -- falls back to vanilla every
+    # time, per-icon, no errors either way. Vanilla fallback per key, for reference:
+    # LEATHER_CHESTPLATE, BOOK, BARRIER, GRAY_STAINED_GLASS_PANE, LEATHER_CHESTPLATE,
+    # LEATHER_CHESTPLATE (same order as below).
+    #
+    itemsadder:
+        # The 16 color swatches in the main grid, all sharing this one skin. SlateChat still
+        # tries to dye it (like the default leather chestplate) if the item happens to
+        # support that (i.e. is leather armor under the hood) -- a custom model built on
+        # leather armor keeps the 16 colors visually distinct; anything else shows this same
+        # skin for every color, name only.
+        color_item: ""
+        # The button that opens the hex picker (only shown at all if hex_picker above isn't
+        # "false"). Purely cosmetic, no dye/recolor involved.
+        book_item: ""
+        # The reset/clear-color button. Purely cosmetic, no dye/recolor involved.
+        reset_item: ""
+        # The decorative background filling every blank slot in the grid. Purely cosmetic --
+        # never clickable either way, custom or not.
+        filler_item: ""
+        # The hex picker's (the anvil, hex_picker: true) input-slot item -- the one that
+        # just sits there prompting you to type. MUST be leather armor under the hood to
+        # keep showing a color at all once you change it below, or it'll just be plain
+        # white regardless of skin.
+        canvas_item: ""
+        # The hex picker's live-updating result-slot preview -- recolors on every keystroke
+        # as you type a hex code. MUST be leather armor under the hood, same as canvas_item,
+        # or it stops being a color preview entirely: always looks identical no matter what
+        # you type, only the name/lore differ. This is the one place a non-leather reskin
+        # costs you real functionality, not just looks.
+        preview_item: ""

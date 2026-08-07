@@ -86,4 +86,20 @@ class ChatPermissionGateTest {
     fun `leaves formatting tags alone`() {
         assertEquals("<bold>x</bold>", ChatPermissionGate.stripAdvancedTags("<bold>x</bold>"))
     }
+
+    // --- stripPrideTag ---
+
+    @Test
+    fun `strips only the pride tag, with any argument, keeping its text`() {
+        assertEquals("flag", ChatPermissionGate.stripPrideTag("<pride:trans>flag</pride>"))
+        assertEquals("flag", ChatPermissionGate.stripPrideTag("<pride>flag</pride>"))
+    }
+
+    @Test
+    fun `leaves every other color tag alone`() {
+        assertEquals(
+            "<red>a</red><gradient:red:blue>b</gradient><rainbow>c</rainbow>",
+            ChatPermissionGate.stripPrideTag("<red>a</red><gradient:red:blue>b</gradient><rainbow>c</rainbow>")
+        )
+    }
 }
