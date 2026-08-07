@@ -1,10 +1,8 @@
 package ch.deepslate.slatechat.core.managers
 
 import ch.deepslate.slatechat.SlateChat
-import ch.deepslate.slatechat.commands.Ch
 import ch.deepslate.slatechat.core.api.Channel
 import org.bukkit.configuration.file.FileConfiguration
-import org.bukkit.plugin.java.JavaPlugin
 
 object FocusManager {
 
@@ -13,16 +11,7 @@ object FocusManager {
     private val fConfig: FileConfiguration
         get() = SlateChat.fConfig
 
-    private var cmdManager: CommandManager? = null
-
     fun prepare() {
-        val plugin: JavaPlugin = SlateChat.instance
-        
-        cmdManager = CommandManager(plugin, "ch").apply {
-            register(Ch())
-            usage = Ch.getMessage("channel_command_usage")
-        }
-
         loadWorldFocus()
     }
 
@@ -44,9 +33,15 @@ object FocusManager {
         }
     }
 
+    /**
+     * The `ch` command used to be registered/unregistered here alongside the focus module --
+     * that's gone now that it's a Brigadier command gated live on `modules.focus` (see
+     * [ch.deepslate.slatechat.commands.Ch]), so this just clears world/channel state on
+     * disable. Note: only [prepare] (i.e. `modules.focus` being enabled) repopulates
+     * `focusWorlds` -- same as before the Brigadier move, if the module gets turned off via
+     * `/slatechat reload`, the map is cleared here and simply stays empty.
+     */
     fun unload() {
-        if (SlateChat.instance.config.getBoolean("modules.focus")) {
-            cmdManager?.unregister()
-        }
+        focusWorlds.clear()
     }
 }

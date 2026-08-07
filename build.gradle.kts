@@ -60,6 +60,14 @@ kotlin {
 // Resource filtering for plugin.yml (${project.name} / ${project.version} placeholders,
 // same ${...} syntax Maven resource filtering used, so plugin.yml didn't need to change)
 tasks.processResources {
+    // Declared as a tracked input, not just captured in the expand() closure below -- Gradle's
+    // up-to-date check doesn't see into that closure, so without this a version-only bump in
+    // gradle.properties (nothing else touched) left processResources considering its previous
+    // output still current and skipped re-expanding plugin.yml: the shaded jar's *filename*
+    // picked up the new version (that comes from the archive task itself), but the version:
+    // line actually baked into plugin.yml inside it silently stayed on the old one. Found this
+    // shipping 1.5.0's own jar with a 1.4.0 plugin.yml still inside.
+    inputs.property("projectVersion", project.version.toString())
     // plugin.yml references ${project.name} / ${project.version}, Maven-style
     filesMatching("plugin.yml") {
         expand(mapOf("project" to mapOf("name" to project.name, "version" to project.version)))

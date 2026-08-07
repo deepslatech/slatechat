@@ -22,12 +22,13 @@ Console can't run this command — it's player-only.
 
 ## `/slatechat`
 
-With no arguments, prints the running SlateChat version. `/slatechat reload` reloads the base config, channels, and every enabled module (chat color, focus, filter, DiscordSRV/ItemsAdder detection) without a server restart. `/slatechat update` checks GitLab for a newer release right now and reports straight back to whoever ran it — works from console too.
+With no arguments, prints the running SlateChat version. `/slatechat reload` reloads the base config, channels, and every enabled module (chat color, focus, filter, DiscordSRV/ItemsAdder detection) without a server restart. `/slatechat update` checks GitLab for a newer release right now and reports straight back to whoever ran it — works from console too. `/slatechat wiki` links to the plugin's documentation (`wiki_url` in `config.yml`, editable) — open to everyone, no permission required.
 
 | Subcommand | Permission    |
 | ---------- | ------------- |
 | `reload`   | `chat.reload` |
 | `update`   | `chat.update` |
+| `wiki`     | *(none)*      |
 
 ## Channel permissions
 

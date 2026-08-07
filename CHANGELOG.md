@@ -4,6 +4,25 @@ All notable changes to SlateChat are documented here. Format loosely follows [Ke
 
 The `## [x.y.z]` section matching the version in `gradle.properties` is what the CI pipeline publishes as the GitLab release's patch notes when that file changes on `master` — see [`.gitlab-ci.yml`](.gitlab-ci.yml).
 
+## [1.5.0] - 2026-08-06
+
+### Added
+
+- Bare `http(s)://` URLs typed straight into chat are now clickable automatically (with a hover showing the URL) — no need for the `[text](url)` MineDown syntax, though that still works exactly as before and can still be used for custom link text. Not gated by any permission, matching MineDown's own link syntax.
+- `/slatechat wiki` links to the plugin's documentation (deepslate.ch) as a clickable message — the URL (`wiki_url` in `config.yml`) is editable. Open to everyone, no permission required.
+- Documented the full list of valid `<pride>` flag names (`docs/formatting-advanced.md`) — the tag already accepted them, they just weren't written down anywhere.
+
+### Fixed
+
+- `<head>`/`<sprite>` rendered tinted by whatever color was active where they sat (a channel's own color, or a sender's `%chat_color%`) instead of the texture's real colors — a message like `<yellow>...<head:Notch> hi` painted the skin yellow. Wrapped in `<white>` plus all five decorations forced off, all real MiniMessage tags that close and revert cleanly. `<reset>` was tried first and reverted: it turns out to not be scoped by its own closing tag the way it looks (see Changed below), so the color of everything *after* the head/sprite fell back to Minecraft's plain default instead of surviving like it should have.
+- `convertLegacyToMiniMessage` did a blind whole-string replace with no regard for existing `<...>` tag boundaries — found while building the URL auto-link above: a URL query string containing `&background=`, `&color=`, etc. would get its `&b`/`&c`/etc. silently rewritten into a color tag mid-URL, corrupting both the click target and the link's own visible text. Now skips tag content the same way `convertHexToMiniMessage` already did for the equivalent hex-color bug (see [1.3.0]).
+- `/slatechat reload` crashing outright with a `NullPointerException` (and, once that was fixed, an `IllegalStateException`) — both were the same root cause described in Changed below: registering a Brigadier command from a live command's own execution isn't something Paper's API supports.
+
+### Changed
+
+- Commands (`/ch`, `/chatcolor`, `/slatechat`, and one per configured channel) now register through Paper's Brigadier `LifecycleEvents.COMMANDS` API instead of reflecting into `PluginCommand`'s private constructor and the server's private `commandMap` — the exact thing the README's "no NMS, no version-specific internals" claim never quite covered. `plugin.yml` no longer declares any commands, and `api-version` moved from a very stale `1.13` to `1.21` to match the Paper API this project actually targets. One deliberate, narrow exception remains: Paper's Brigadier dispatcher can only be mutated while that one lifecycle event is actively dispatching (at boot, or an actual `/reload confirm`) — never from a live command's own execution, confirmed the hard way by the crashes fixed above — so a channel whose *command name* is brand new since boot (not just an edited existing one) still goes through the old reflection technique to become reachable without a full server restart. Isolated to its own file (`LegacyCommandRegistrar`), used from exactly one call site, and documented in code as the deliberate exception it is.
+- Restricted channels' commands are now hidden from tab-complete/help using the same `blocksSender()` rule the rest of the plugin already uses everywhere else, instead of the native `PluginCommand.permission` field — which had no way to express "restricted with no `permission` node configured = OP only", a case `blocksSender()` has always handled correctly.
+
 ## [1.4.0] - 2026-08-06
 
 ### Added

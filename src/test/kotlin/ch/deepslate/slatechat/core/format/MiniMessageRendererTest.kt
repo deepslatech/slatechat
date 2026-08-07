@@ -93,7 +93,134 @@ class MiniMessageRendererTest {
         assertEquals("a\nb\nc", MiniMessageRenderer.convertBreaks("a<br>b<BR/>c"))
     }
 
+    // --- neutralizeTextureTags ---
+
+    private val NEUTRAL_OPEN =
+        "<white><bold:false><italic:false><underlined:false><strikethrough:false><obfuscated:false>"
+    private val NEUTRAL_CLOSE =
+        "</obfuscated></strikethrough></underlined></italic></bold></white>"
+
+    @Test
+    fun `a bare head tag gets wrapped in a real, scoped neutral color`() {
+        assertEquals(
+            "$NEUTRAL_OPEN<head:Notch>$NEUTRAL_CLOSE",
+            MiniMessageRenderer.neutralizeTextureTags("<head:Notch>")
+        )
+    }
+
+    @Test
+    fun `a sprite tag gets the same treatment as head`() {
+        assertEquals(
+            "$NEUTRAL_OPEN<sprite:blocks:block/stone>$NEUTRAL_CLOSE",
+            MiniMessageRenderer.neutralizeTextureTags("<sprite:blocks:block/stone>")
+        )
+    }
+
+    @Test
+    fun `only the head tag is wrapped, color before and after it is left alone`() {
+        // Mirrors channels.yml's own "%chat_color%<message>" shape: an open, unclosed color
+        // tag that everything after it -- including a <head> the sender typed -- would
+        // otherwise inherit.
+        assertEquals(
+            "<yellow>hi $NEUTRAL_OPEN<head:Notch>$NEUTRAL_CLOSE bye",
+            MiniMessageRenderer.neutralizeTextureTags("<yellow>hi <head:Notch> bye")
+        )
+    }
+
+    @Test
+    fun `multiple texture tags are each wrapped independently`() {
+        assertEquals(
+            "$NEUTRAL_OPEN<head:A>$NEUTRAL_CLOSE and $NEUTRAL_OPEN<sprite:x:y>$NEUTRAL_CLOSE",
+            MiniMessageRenderer.neutralizeTextureTags("<head:A> and <sprite:x:y>")
+        )
+    }
+
+    @Test
+    fun `text without a head or sprite tag is left untouched`() {
+        assertEquals(
+            "<yellow>hi bye",
+            MiniMessageRenderer.neutralizeTextureTags("<yellow>hi bye")
+        )
+    }
+
+    @Test
+    fun `color after a head tag survives the full render pipeline`() {
+        // Regression: <reset> doesn't actually scope to a paired </reset> in MiniMessage --
+        // it resets forward from that point regardless (see CHANGELOG.md [1.4.0] and
+        // neutralizeTextureTags's doc comment). Wrapping the head tag in <reset>...</reset>
+        // used to leak the reset past its own closing tag, so "bye" fell back to Minecraft's
+        // plain default instead of staying <yellow> like the rest of the message.
+        val component = MiniMessageRenderer.render("<yellow>hi <head:Notch> bye")
+        assertEquals(NamedTextColor.YELLOW, effectiveColorOf(component, "bye"))
+    }
+
+    // --- extractLinks / reinsertLinks ---
+
+    @Test
+    fun `a bare URL is pulled out and the placeholder round-trips back to a click+hover link`() {
+        val extraction = MiniMessageRenderer.extractLinks("check https://example.com out")
+        assertEquals(listOf("https://example.com"), extraction.urls)
+        assertEquals(false, extraction.text.contains("https://"))
+
+        assertEquals(
+            "check <click:open_url:https://example.com><hover:show_text:'https://example.com'>" +
+                "https://example.com</hover></click> out",
+            MiniMessageRenderer.reinsertLinks(extraction.text, extraction.urls)
+        )
+    }
+
+    @Test
+    fun `trailing sentence punctuation is excluded from the link`() {
+        val extraction = MiniMessageRenderer.extractLinks("go to https://example.com!")
+        assertEquals(listOf("https://example.com"), extraction.urls)
+        assertEquals(
+            "go to <click:open_url:https://example.com><hover:show_text:'https://example.com'>" +
+                "https://example.com</hover></click>!",
+            MiniMessageRenderer.reinsertLinks(extraction.text, extraction.urls)
+        )
+    }
+
+    @Test
+    fun `a URL already inside an existing tag (e_g_ a MineDown-built link) is not extracted again`() {
+        val input = "<click:open_url:https://example.com>Click</click>"
+        val extraction = MiniMessageRenderer.extractLinks(input)
+        assertEquals(emptyList(), extraction.urls)
+        assertEquals(input, extraction.text)
+    }
+
+    @Test
+    fun `multiple URLs are each extracted and reinserted independently`() {
+        val extraction = MiniMessageRenderer.extractLinks("https://a.com and https://b.com")
+        assertEquals(listOf("https://a.com", "https://b.com"), extraction.urls)
+        val result = MiniMessageRenderer.reinsertLinks(extraction.text, extraction.urls)
+        assertEquals(true, result.contains("open_url:https://a.com"))
+        assertEquals(true, result.contains("open_url:https://b.com"))
+    }
+
     // --- render (full pipeline) ---
+
+    @Test
+    fun `a bare URL typed straight into chat renders as a clickable link`() {
+        val component = MiniMessageRenderer.render("check https://example.com out")
+        assertEquals(true, component.toString().contains("https://example.com"))
+        assertEquals(true, component.toString().lowercase().contains("open_url"))
+    }
+
+    @Test
+    fun `a URL query string is not mangled by the hex or legacy-code passes in between`() {
+        // Regression: extractLinks pulls the URL out entirely before convertHexToMiniMessage/
+        // convertLegacyToMiniMessage run, specifically so a query string like "&background="
+        // doesn't get its "&b" silently rewritten into a color tag mid-URL (and mid-link-text,
+        // since the URL is also its own visible label).
+        val component = MiniMessageRenderer.render("https://example.com?a=1&background=2")
+        assertEquals(true, component.toString().contains("https://example.com?a=1&background=2"))
+    }
+
+    @Test
+    fun `a URL fragment that looks like a hex color is not mangled either`() {
+        val component = MiniMessageRenderer.render("https://example.com/page#a1b2c3")
+        assertEquals(true, component.toString().contains("https://example.com/page#a1b2c3"))
+    }
 
     @Test
     fun `render deserializes the fully converted string into a component`() {

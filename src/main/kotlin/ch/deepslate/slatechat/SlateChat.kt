@@ -1,8 +1,7 @@
 package ch.deepslate.slatechat
 
-import ch.deepslate.slatechat.commands.ChatColorCommand
-import ch.deepslate.slatechat.commands.SlateCmd
 import ch.deepslate.slatechat.core.managers.ChannelsManager
+import ch.deepslate.slatechat.core.managers.CommandRegistrar
 import ch.deepslate.slatechat.core.managers.CustomConfigs
 import ch.deepslate.slatechat.core.managers.FocusManager
 import ch.deepslate.slatechat.core.managers.UpdateChecker
@@ -43,11 +42,12 @@ class SlateChat : JavaPlugin() {
         // Register PlaceholderAPI expansion
         ChatPlaceholder(this).register()
 
-        // Commands
-        getCommand("slatechat")?.setExecutor(SlateCmd())
-
-        // Load channels system
+        // Load channels system (before registering commands -- CommandRegistrar reads the
+        // channel list to register one Brigadier command per channel)
         ChannelsManager.load()
+
+        // Commands (Brigadier, via LifecycleEvents.COMMANDS -- see CommandRegistrar)
+        CommandRegistrar.install(this)
 
         // Focus module
         if (config.getBoolean("modules.focus")) {
@@ -58,7 +58,6 @@ class SlateChat : JavaPlugin() {
         // Chat color module
         if (config.getBoolean("modules.chatcolor")) {
             colorsConfig = CustomConfigs.createCustomConfig("color")
-            getCommand("chatcolor")?.setExecutor(ChatColorCommand())
         }
 
         // Filter module

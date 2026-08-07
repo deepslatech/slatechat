@@ -5,75 +5,86 @@ import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
 import ch.deepslate.slatechat.core.format.MineDownConverter
 import ch.deepslate.slatechat.core.format.MiniMessageRenderer
+import com.mojang.brigadier.Command
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.tree.LiteralCommandNode
+import io.papermc.paper.command.brigadier.CommandSourceStack
+import io.papermc.paper.command.brigadier.Commands
 import net.kyori.adventure.text.minimessage.MiniMessage
-import org.bukkit.command.Command
-import org.bukkit.command.CommandExecutor
-import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import java.util.regex.Pattern
 
-class ChatColorCommand : CommandExecutor {
+object ChatColorCommand {
 
     private val mm = MiniMessage.miniMessage()
 
-    companion object {
-        // HEX needs full 6 digits to avoid ambiguous MiniMessage parsing
-        val RGB: Pattern =
-            Pattern.compile("#([0-9a-fA-F]{6})")
+    // HEX needs full 6 digits to avoid ambiguous MiniMessage parsing
+    val RGB: Pattern =
+        Pattern.compile("#([0-9a-fA-F]{6})")
 
-        val LEGACY: Pattern =
-            Pattern.compile("&([0-9a-fA-F])")
-    }
+    val LEGACY: Pattern =
+        Pattern.compile("&([0-9a-fA-F])")
 
-    override fun onCommand(
-        sender: CommandSender,
-        command: Command,
-        label: String,
-        args: Array<out String>
-    ): Boolean {
+    fun node(): LiteralCommandNode<CommandSourceStack> =
+        Commands.literal("chatcolor")
+            .requires { SlateChat.instance.config.getBoolean("modules.chatcolor") }
+            .executes { ctx -> setColor(ctx.source, null); Command.SINGLE_SUCCESS }
+            .then(
+                // Greedy, not word() -- the original just read args[0] and silently ignored
+                // anything past it, so trailing garbage after the color still has to parse.
+                Commands.argument("color", StringArgumentType.greedyString())
+                    .executes { ctx ->
+                        val firstWord = StringArgumentType.getString(ctx, "color").substringBefore(' ')
+                        setColor(ctx.source, firstWord)
+                        Command.SINGLE_SUCCESS
+                    }
+            )
+            .build()
+
+    private fun setColor(source: CommandSourceStack, input: String?) {
+        val sender = source.sender
 
         if (sender !is Player) {
             sender.sendMessage(msg("only_players"))
-            return true
+            return
         }
 
         if (!sender.hasPermission("chat.setcolor")) {
             sender.sendMessage(msg("no_permission"))
-            return true
+            return
         }
 
-        if (args.isEmpty()) {
+        if (input == null) {
             sender.sendMessage(msg("no_arg"))
-            return true
+            return
         }
 
         val chatPlayer = ChatPlayerManager.get(sender)
-        val input = args[0]
 
         // Clear color (configurable keywords in color.yml)
         val clearKeywords = SlateChat.colorsConfig.getStringList("clear_keywords")
         if (clearKeywords.any { input.equals(it, true) }) {
             chatPlayer.color = ""
             sender.sendMessage(msg("removed"))
-            return true
+            return
         }
 
         if (!sender.hasPermission("chat.colored")) {
             sender.sendMessage(msg("no_permission"))
-            return true
+            return
         }
 
         // Validate format
         if (!validate(input)) {
             sender.sendMessage(msg("invalid"))
-            return true
+            return
         }
 
         chatPlayer.color = input
 
         val successRaw = SlateChat.colorsConfig.getString("success") ?: "<green>Color updated!"
         var withPlaceholders = PlaceholderAPI.setPlaceholders(sender, successRaw)
-        
+
         // Convert MineDown syntax to MiniMessage (pass player for permission checks)
         withPlaceholders = MineDownConverter.convert(withPlaceholders, sender)
         // Hex and legacy codes to MiniMessage -- same tag-aware conversion the chat pipeline
@@ -83,8 +94,6 @@ class ChatColorCommand : CommandExecutor {
             MiniMessageRenderer.convertHexToMiniMessage(withPlaceholders)
         ) + "<reset>"
         sender.sendMessage(mm.deserialize(converted))
-
-        return true
     }
 
     private fun validate(hexColor: String): Boolean {

@@ -1,45 +1,60 @@
 package ch.deepslate.slatechat.commands
 
 import ch.deepslate.slatechat.SlateChat
-import ch.deepslate.slatechat.core.api.Channel
 import ch.deepslate.slatechat.core.api.blocksSender
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.managers.ChatPlayerManager
+import com.mojang.brigadier.Command
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.suggestion.Suggestions
+import com.mojang.brigadier.suggestion.SuggestionsBuilder
+import com.mojang.brigadier.tree.LiteralCommandNode
+import io.papermc.paper.command.brigadier.CommandSourceStack
+import io.papermc.paper.command.brigadier.Commands
 import net.kyori.adventure.text.minimessage.MiniMessage
-import org.bukkit.command.Command
-import org.bukkit.command.CommandExecutor
-import org.bukkit.command.CommandSender
-import org.bukkit.command.TabCompleter
 import org.bukkit.entity.Player
+import java.util.concurrent.CompletableFuture
 
-class Ch : CommandExecutor, TabCompleter {
+/** `/ch <channel>` -- switches the sender's active channel. Gated on the focus module being
+ *  enabled purely for historical reasons (it's registered/unregistered alongside FocusManager
+ *  in the pre-Brigadier code); nothing about its own logic is focus-specific. */
+object Ch {
 
     private val mm = MiniMessage.miniMessage()
 
-    override fun onCommand(
-        sender: CommandSender,
-        command: Command,
-        label: String,
-        args: Array<out String>
-    ): Boolean {
+    fun node(): LiteralCommandNode<CommandSourceStack> =
+        Commands.literal("ch")
+            .requires { SlateChat.instance.config.getBoolean("modules.focus") }
+            .executes { ctx -> switchChannel(ctx.source, null); Command.SINGLE_SUCCESS }
+            .then(
+                Commands.argument("channel", StringArgumentType.word())
+                    .suggests { ctx, builder -> suggestChannels(ctx.source, builder) }
+                    .executes { ctx ->
+                        switchChannel(ctx.source, StringArgumentType.getString(ctx, "channel"))
+                        Command.SINGLE_SUCCESS
+                    }
+            )
+            .build()
 
+    private fun switchChannel(source: CommandSourceStack, arg: String?) {
+        val sender = source.sender
         if (sender !is Player) {
             sender.sendMessage(msg("players_only"))
-            return true
+            return
         }
 
-        if (args.isEmpty()) {
+        if (arg == null) {
             sender.sendMessage(msg("channel_command_usage"))
-            return true
+            return
         }
 
         val channel = ChannelsManager.channelsCache.keys.firstOrNull {
-            it.name.equals(args[0], true) || it.command.equals(args[0], true)
+            it.name.equals(arg, true) || it.command.equals(arg, true)
         }
 
         if (channel == null || channel.blocksSender(sender)) {
             sender.sendMessage(msg("invalid_channel"))
-            return true
+            return
         }
 
         ChatPlayerManager.get(sender).channel = channel
@@ -50,30 +65,19 @@ class Ch : CommandExecutor, TabCompleter {
             .replace("<channelCommand>", channel.command)
 
         sender.sendMessage(mm.deserialize(message))
-        return true
     }
 
-    override fun onTabComplete(
-        sender: CommandSender,
-        command: Command,
-        alias: String,
-        args: Array<out String>
-    ): List<String> {
-
-        val channels = ChannelsManager.channelsCache.keys
-            .filter {
-                !it.restrict || it.permission?.let { perm -> sender.hasPermission(perm) } == true
-            }
+    private fun suggestChannels(
+        source: CommandSourceStack,
+        builder: SuggestionsBuilder
+    ): CompletableFuture<Suggestions> {
+        ChannelsManager.channelsCache.keys
+            .filter { !it.blocksSender(source.sender) }
             .map { it.name }
+            .filter { it.startsWith(builder.remaining, ignoreCase = true) }
+            .forEach { builder.suggest(it) }
 
-        return if (args.size == 1) {
-            channels.filter { it.startsWith(args[0], ignoreCase = true) }
-        } else emptyList()
-    }
-
-    companion object {
-        fun getMessage(path: String): String =
-            SlateChat.instance.config.getString(path) ?: ""
+        return builder.buildFuture()
     }
 
     private fun msg(path: String) =

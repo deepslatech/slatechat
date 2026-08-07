@@ -49,6 +49,16 @@ invalid_channel: "<red>Invalid channel!"
 plugin_reloaded: "<green>Plugin reloaded."
 
 #
+# /slatechat wiki -- points whoever ran it to the plugin's documentation.
+# Placeholder: <url> -- the wiki_url below, rendered as a clickable link
+#
+wiki_message: "<green>Documentation: <url>"
+#
+# The link /slatechat wiki opens.
+#
+wiki_url: "https://deepslate.ch/docs/plugins/slatechat"
+
+#
 # Update checker messages (see modules.update_checker)
 # Placeholders: <version> - the newer version found, <current> - the version you're running
 #

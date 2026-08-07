@@ -92,6 +92,10 @@ MineDown uses the syntax: `[Display Text](arguments)`
 - With permission: `[Click here](/kill Execute the kill command)` - Shows custom hover "Execute the kill command"
 - Without permission: The custom text is ignored and the command "/kill" is shown in hover instead
 
+### Bare URLs are auto-linked too
+
+You don't need the `[Text](url)` syntax just to make a link clickable — typing a plain `https://example.com` straight into chat auto-links it (same hover-shows-the-URL behavior as above). Use the MineDown syntax instead when you want custom display text (`[Visit our site](https://example.com)`) rather than the raw URL as the link's own label. Not gated by any permission, same as `[Text](url)` links.
+
 ### Usage Examples
 
 #### 1. Clickable Link (URL)

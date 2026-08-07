@@ -30,6 +30,8 @@ Two more color-family tags, also gated by `chat.colored`, MiniMessage-only (no M
 <pride:trans>Pride flag gradient</pride>
 ```
 
+> **`pride`'s flag argument** can be any of: `pride`, `progress`, `trans`, `bi`, `pan`, `nb`, `lesbian`, `ace`, `agender`, `demisexual`, `genderqueer`, `genderfluid`, `intersex`, `aro`, `baker`, `philly`, `queer`, `gay`, `bigender`, `demigender`, `femboy`, or `intersex inclusive`.
+
 > **`transition` is not a per-character gradient.** Unlike `<gradient>`, it picks *one solid color* for the whole span, chosen from the color list by the trailing `phase` argument (`-1` to `1`, defaults to `0`). `<transition:red:blue:green:0>text</transition>` renders `text` entirely red — every phase value is a single flat color, not a blend across the text. The visual "transition" only shows up if something re-sends the message with a different `phase` each time (a scoreboard/bossbar/actionbar on a repeating task, for example) — a one-off chat message will always look like a solid color. For a static multi-color effect in chat, use `gradient` or `rainbow` instead.
 
 ## Cosmetic tags — `chat.cosmetic`
@@ -48,6 +50,8 @@ These generate their own content rather than decorating existing text, so there'
 ```
 
 > **`<head>` and `<sprite>` need Adventure 4.25.0+**, which Paper only started bundling in **1.21.10** (1.21.9 shipped a snapshot build; 1.21.8 and earlier are on Adventure 4.24.0 and don't have these tags at all). On an older server the tag isn't invalid syntax — MiniMessage just doesn't recognize it and passes it through as literal text, permission or not. There's no workaround short of updating the server; this isn't something SlateChat can gate around.
+
+> **Always render in their own real colors**, regardless of any color active around them (a channel's own color, a sender's `/chatcolor`, etc.) — SlateChat neutralizes color and decorations around every `<head>`/`<sprite>` before it reaches the client, so the texture is never tinted.
 
 ## Data tags — `chat.advanced` (OP-only by default)
 

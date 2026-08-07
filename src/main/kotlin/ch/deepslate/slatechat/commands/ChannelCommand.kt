@@ -1,62 +1,139 @@
 package ch.deepslate.slatechat.commands
 
 import ch.deepslate.slatechat.SlateChat
+import ch.deepslate.slatechat.core.api.Channel
 import ch.deepslate.slatechat.core.api.blocksSender
 import ch.deepslate.slatechat.core.integrations.SoftDependency
 import ch.deepslate.slatechat.core.managers.ChannelsManager
 import ch.deepslate.slatechat.core.model.Message
+import com.mojang.brigadier.Command
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.suggestion.Suggestions
+import com.mojang.brigadier.suggestion.SuggestionsBuilder
+import com.mojang.brigadier.tree.LiteralCommandNode
+import io.papermc.paper.command.brigadier.CommandSourceStack
+import io.papermc.paper.command.brigadier.Commands
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
-import org.bukkit.command.Command
+import org.bukkit.command.Command as BukkitCommand
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.Player
+import java.util.concurrent.CompletableFuture
 
-class ChannelCommand(private val commandName: String) : CommandExecutor, TabCompleter {
+/** Per-channel command (`/g`, `/l`, ...), one instance registered per configured channel via
+ *  [node] (the normal path -- see [ch.deepslate.slatechat.core.managers.CommandRegistrar]) or,
+ *  for a channel command that's new since boot, [legacyExecutor] (the reflection fallback --
+ *  see [ch.deepslate.slatechat.core.managers.LegacyCommandRegistrar]). Both share the exact
+ *  same [sendUsage]/[sendMessage]/[suggestEmoji] logic below; the only difference is how
+ *  Bukkit hands the command off. Looks its [Channel] up by `commandName` at execution time
+ *  rather than closing over one, so it keeps working across `/slatechat reload` rebuilding
+ *  every Channel as a new object, and quietly no-ops if the channel is later removed from
+ *  channels.yml. */
+object ChannelCommand {
 
     private val mm: MiniMessage = MiniMessage.miniMessage()
 
-    override fun onCommand(
-        sender: CommandSender,
-        command: Command,
-        label: String,
-        args: Array<out String>
-    ): Boolean {
+    fun node(commandName: String): LiteralCommandNode<CommandSourceStack> =
+        Commands.literal(commandName)
+            // Hides the command from tab-complete/help for senders it blocks (also gates
+            // execution -- Brigadier checks requires() before executes() runs, so there's no
+            // need for a second blocksSender() check inside sendUsage/sendMessage below).
+            // Covers the "restrict with no permission node" OP-only case too, which the old
+            // PluginCommand.permission field had no way to express.
+            .requires { source -> channelFor(commandName)?.let { !it.blocksSender(source.sender) } ?: true }
+            .executes { ctx -> sendUsage(ctx.source.sender, commandName); Command.SINGLE_SUCCESS }
+            .then(
+                Commands.argument("message", StringArgumentType.greedyString())
+                    .suggests { _, builder -> suggestEmoji(builder) }
+                    .executes { ctx ->
+                        sendMessage(ctx.source.sender, commandName, StringArgumentType.getString(ctx, "message"))
+                        Command.SINGLE_SUCCESS
+                    }
+            )
+            .build()
 
+    /**
+     * Legacy `CommandExecutor`/`TabCompleter` adapter for
+     * [ch.deepslate.slatechat.core.managers.LegacyCommandRegistrar] -- delegates to the exact
+     * same [sendUsage]/[sendMessage]/[suggestEmoji] logic [node] uses. Unlike [node]'s own
+     * `.requires()`, this path can't hide the command from tab-complete/help via a native
+     * permission field the same way -- `blocksSender()` inside sendUsage/sendMessage still
+     * enforces it correctly either way, this only affects discoverability for a restricted
+     * channel, and only until the next restart re-registers it through the normal path.
+     */
+    fun legacyExecutor(commandName: String): CommandExecutor = LegacyAdapter(commandName)
+
+    private class LegacyAdapter(private val commandName: String) : CommandExecutor, TabCompleter {
+
+        override fun onCommand(
+            sender: CommandSender,
+            command: BukkitCommand,
+            label: String,
+            args: Array<out String>
+        ): Boolean {
+            if (args.isEmpty()) {
+                sendUsage(sender, commandName)
+            } else {
+                sendMessage(sender, commandName, args.joinToString(" "))
+            }
+            return true
+        }
+
+        override fun onTabComplete(
+            sender: CommandSender,
+            command: BukkitCommand,
+            alias: String,
+            args: Array<out String>
+        ): List<String> {
+            if (!SlateChat.isItemsAdder || args.isEmpty()) return emptyList()
+
+            val current = args.last()
+            if (!current.startsWith(":")) return emptyList()
+
+            val prefix = current.removePrefix(":")
+            return itemsAdderEmojiNames()
+                .filter { it.startsWith(prefix, ignoreCase = true) }
+                .sorted()
+                .map { ":$it:" }
+        }
+    }
+
+    private fun channelFor(commandName: String): Channel? =
+        ChannelsManager.channelsCache.keys.firstOrNull { it.command.equals(commandName, true) }
+
+    private fun sendUsage(sender: CommandSender, commandName: String) {
         if (sender !is Player) {
             sender.sendMessage(msg("players_only"))
-            return true
+            return
         }
 
-        val channel = ChannelsManager.channelsCache.keys
-            .firstOrNull { it.command.equals(commandName, true) }
-            ?: return true
+        channelFor(commandName) ?: return
 
-        if (channel.blocksSender(sender)) {
-            sender.sendMessage(msg("no_permission"))
-            return true
+        val usage = SlateChat.instance.config
+            .getString("channel_usage_message")
+            ?.replace("<command>", commandName.lowercase())
+            ?: "<red>Usage message missing"
+
+        sender.sendMessage(mm.deserialize(usage))
+    }
+
+    private fun sendMessage(sender: CommandSender, commandName: String, text: String) {
+        if (sender !is Player) {
+            sender.sendMessage(msg("players_only"))
+            return
         }
 
-        if (args.isEmpty()) {
-            val usage = SlateChat.instance.config
-                .getString("channel_usage_message")
-                ?.replace("<command>", commandName.lowercase())
-                ?: "<red>Usage message missing"
-
-            sender.sendMessage(mm.deserialize(usage))
-            return true
-        }
+        val channel = channelFor(commandName) ?: return
 
         // Run message processing async (Paper's Folia-aware scheduler)
         Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
-            Message(sender, args.joinToString(" "), channel)
+            Message(sender, text, channel)
                 .validate()
                 .prepare()
                 .send()
         }
-
-        return true
     }
 
     /**
@@ -64,23 +141,27 @@ class ChannelCommand(private val commandName: String) : CommandExecutor, TabComp
      * matching the same suggestions the vanilla chat box already offers via ItemsAdder's
      * own client-side chat completions -- those don't reach command arguments on their own,
      * since commands use Brigadier's separate tab-complete protocol.
+     *
+     * The "message" argument is a single greedy string, so `builder.remaining` is everything
+     * typed so far, not just the current word -- offset a fresh builder to the last space to
+     * suggest only for the word actually being typed.
      */
-    override fun onTabComplete(
-        sender: CommandSender,
-        command: Command,
-        alias: String,
-        args: Array<out String>
-    ): List<String> {
-        if (!SlateChat.isItemsAdder || args.isEmpty()) return emptyList()
+    private fun suggestEmoji(builder: SuggestionsBuilder): CompletableFuture<Suggestions> {
+        if (!SlateChat.isItemsAdder) return builder.buildFuture()
 
-        val current = args.last()
-        if (!current.startsWith(":")) return emptyList()
+        val remaining = builder.remaining
+        val lastSpace = remaining.lastIndexOf(' ')
+        val current = remaining.substring(lastSpace + 1)
+        if (!current.startsWith(":")) return builder.buildFuture()
 
         val prefix = current.removePrefix(":")
-        return itemsAdderEmojiNames()
+        val wordBuilder = builder.createOffset(builder.start + lastSpace + 1)
+        itemsAdderEmojiNames()
             .filter { it.startsWith(prefix, ignoreCase = true) }
             .sorted()
-            .map { ":$it:" }
+            .forEach { wordBuilder.suggest(":$it:") }
+
+        return wordBuilder.buildFuture()
     }
 
     /** Bare (non-namespaced) font image names registered in ItemsAdder, via reflection. */

@@ -1,12 +1,11 @@
 name: ${project.name}
 version: ${project.version}
-api-version: 1.13
+api-version: 1.21
 main: ch.deepslate.slatechat.SlateChat
 author: Deepslate Studios
 website: https://gitlab.com/deepslatech/slatechat
 depend: [PlaceholderAPI]
 softdepend: [DiscordSRV, ItemsAdder]
-commands:
-    ch:
-    chatcolor:
-    slatechat:
+# Commands (ch, chatcolor, slatechat, and one per configured channel) are registered
+# dynamically via Paper's Brigadier lifecycle API -- see CommandRegistrar.kt -- so none of
+# them need declaring here.
