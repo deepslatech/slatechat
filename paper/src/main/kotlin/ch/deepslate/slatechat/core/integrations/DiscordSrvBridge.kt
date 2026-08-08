@@ -1,5 +1,7 @@
 package ch.deepslate.slatechat.core.integrations
 
+import ch.deepslate.slatechat.common.integrations.SoftDependency
+
 /**
  * Forwards a chat line to the DiscordSRV text channel mapped to a given SlateChat channel
  * name. Uses reflection (soft dependency) so this is a no-op when DiscordSRV isn't installed.

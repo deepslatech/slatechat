@@ -1,6 +1,7 @@
 package ch.deepslate.slatechat.core.integrations
 
 import ch.deepslate.slatechat.SlateChat
+import ch.deepslate.slatechat.common.integrations.SoftDependency
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import java.util.concurrent.CompletableFuture

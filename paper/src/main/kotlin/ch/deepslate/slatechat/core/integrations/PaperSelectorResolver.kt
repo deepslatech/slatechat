@@ -1,5 +1,6 @@
 package ch.deepslate.slatechat.core.integrations
 
+import ch.deepslate.slatechat.common.integrations.SoftDependency
 import net.kyori.adventure.text.Component
 import org.bukkit.entity.Player
 

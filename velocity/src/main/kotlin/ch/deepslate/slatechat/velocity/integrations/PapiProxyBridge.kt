@@ -1,5 +1,6 @@
 package ch.deepslate.slatechat.velocity.integrations
 
+import ch.deepslate.slatechat.common.integrations.SoftDependency
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 

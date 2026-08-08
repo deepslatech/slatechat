@@ -1,6 +1,7 @@
 package ch.deepslate.slatechat.core.integrations
 
 import ch.deepslate.slatechat.SlateChat
+import ch.deepslate.slatechat.common.integrations.SoftDependency
 import org.bukkit.Material
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.inventory.ItemStack
