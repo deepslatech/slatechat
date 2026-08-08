@@ -3,6 +3,8 @@ package ch.deepslate.slatechat.velocity
 import ch.deepslate.slatechat.velocity.commands.NetworkChannelCommand
 import ch.deepslate.slatechat.velocity.commands.SlateCommand
 import ch.deepslate.slatechat.velocity.config.loadNetworkChannels
+import ch.deepslate.slatechat.velocity.network.ProxyMessenger
+import ch.deepslate.slatechat.velocity.network.ProxyPing
 import ch.deepslate.slatechat.velocity.update.UpdateCheck
 import com.google.inject.Inject
 import com.velocitypowered.api.command.BrigadierCommand
@@ -41,6 +43,17 @@ class SlateChatVelocity @Inject constructor(
 
         val slateMeta = server.commandManager.metaBuilder("slatechat").plugin(this).build()
         server.commandManager.register(slateMeta, BrigadierCommand(SlateCommand(::reloadNetworkChannels).node()))
+
+        // slatechat:main plugin-messaging transport (see velocity/.../network/ProxyMessenger.kt)
+        // -- registered as its own listener object, not a @Subscribe method on this class
+        // directly, so it can be unit-testable/reusable independent of the plugin's own
+        // lifecycle wiring. Must be registered with the event manager explicitly: unlike this
+        // class's own @Subscribe methods (auto-registered by Velocity's plugin loader for the
+        // @Plugin main class), a separate object needs `eventManager.register` called on it.
+        val proxyMessenger = ProxyMessenger(server, logger)
+        server.eventManager.register(this, proxyMessenger)
+        proxyMessenger.install()
+        ProxyPing.install(proxyMessenger)
 
         UpdateCheck.check(readBundledVersion(), logger)
 

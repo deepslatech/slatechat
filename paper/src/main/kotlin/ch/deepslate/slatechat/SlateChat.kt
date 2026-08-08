@@ -6,6 +6,8 @@ import ch.deepslate.slatechat.core.managers.CommandRegistrar
 import ch.deepslate.slatechat.core.managers.CustomConfigs
 import ch.deepslate.slatechat.core.managers.FocusManager
 import ch.deepslate.slatechat.core.managers.UpdateChecker
+import ch.deepslate.slatechat.core.network.ProxyMessenger
+import ch.deepslate.slatechat.core.network.ProxyPing
 import ch.deepslate.slatechat.core.placeholders.ChatPlaceholder
 import ch.deepslate.slatechat.gui.ChatColorMenuListener
 import ch.deepslate.slatechat.gui.HexColorMenuListener
@@ -83,6 +85,13 @@ class SlateChat : JavaPlugin() {
         // DiscordSRV / ItemsAdder hooks
         detectSoftDependencies()
 
+        // Proxy plugin-messaging transport (slatechat:main) + its round-trip diagnostic --
+        // see core/network/ProxyMessenger.kt's class doc. Installed unconditionally: it's a
+        // no-op cost if this server isn't actually behind a Velocity proxy running SlateChat,
+        // same as registering a Bukkit channel nobody on the other end reads.
+        ProxyMessenger.install(this)
+        ProxyPing.install()
+
         // Events
         server.pluginManager.registerEvents(LocalListener(), this)
         server.pluginManager.registerEvents(ChatPlayerListener(), this)
@@ -96,6 +105,7 @@ class SlateChat : JavaPlugin() {
     override fun onDisable() {
         ChannelsManager.disable()
         FocusManager.unload()
+        ProxyMessenger.uninstall(this)
     }
 
     /**

@@ -8,6 +8,7 @@ import ch.deepslate.slatechat.core.managers.CommandRegistrar
 import ch.deepslate.slatechat.core.managers.CustomConfigs
 import ch.deepslate.slatechat.core.managers.FocusManager
 import ch.deepslate.slatechat.core.managers.UpdateChecker
+import ch.deepslate.slatechat.core.network.ProxyPing
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.tree.LiteralCommandNode
 import io.papermc.paper.command.brigadier.CommandSourceStack
@@ -24,6 +25,7 @@ object SlateCmd {
             .then(Commands.literal("reload").executes { ctx -> reload(ctx.source); Command.SINGLE_SUCCESS })
             .then(Commands.literal("update").executes { ctx -> update(ctx.source); Command.SINGLE_SUCCESS })
             .then(Commands.literal("wiki").executes { ctx -> wiki(ctx.source); Command.SINGLE_SUCCESS })
+            .then(Commands.literal("network").executes { ctx -> network(ctx.source); Command.SINGLE_SUCCESS })
             .build()
 
     private fun showVersion(source: CommandSourceStack) {
@@ -114,6 +116,19 @@ object SlateCmd {
         }
 
         UpdateChecker.checkNow(sender)
+    }
+
+    /** Round-trip check of the slatechat:main plugin-messaging transport -- see
+     *  core/network/ProxyPing.kt's class doc for what this does and doesn't verify. */
+    private fun network(source: CommandSourceStack) {
+        val sender = source.sender
+
+        if (!sender.hasPermission("chat.network.ping")) {
+            sender.sendMessage(noPermissionMessage())
+            return
+        }
+
+        ProxyPing.send(sender)
     }
 
     /** Points whoever ran the command to the plugin's documentation. The URL is config-
