@@ -4,7 +4,10 @@
 #
 # - > Keys can't be the same.
 # - > Full support for PlaceholdersAPI on channel format
-# - > Full support for MineDown everywhere
+# - > Native support for MiniMessage tags, plus MineDown ([text](color),
+#     [text](url), gradients, rainbow, etc -- see MineDownConverter.kt for
+#     the full syntax) and legacy (&/§) color codes. All three work
+#     everywhere and can be mixed freely in the same format.
 # - > Native placeholders:
 #   - <player> - Who sent the message
 #   - <message> - The message

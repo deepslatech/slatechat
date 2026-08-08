@@ -1,0 +1,35 @@
+#       SlateChat by Deepslate Studios
+#
+#      Network channels configuration (Velocity)
+#
+# - > Keys can't be the same.
+# - > Native support for MiniMessage tags, plus legacy (&/§) color codes --
+#     both work everywhere and can be mixed freely. No MineDown ([text](color))
+#     support here, unlike the Paper-side channels.yml -- MineDownConverter is
+#     Paper-only and hasn't been ported to the proxy.
+# - > PlaceholderAPI placeholders (e.g. %luckperms_prefix%) work if
+#     PAPIProxyBridge (https://william278.net/project/papiproxybridge) is
+#     installed on this proxy -- the proxy itself has no access to PAPI at
+#     all otherwise (see deepslate.ch docs). Without it, %-style tokens in
+#     the format are left as-is.
+# - > Native placeholders:
+#   - <player> - Who sent the message
+#   - <server> - Which backend server the sender is currently on
+#   - <message> - The message
+#
+# You can add as many network channels as you wish, as long as the key
+# (e.g. 'staff') is not the same. Unlike the Paper-side channels.yml, there
+# is no 'restrict' toggle here -- every network channel always requires its
+# own permission, since this is proxy-wide staff-style messaging, not local
+# chat.
+#
+
+staff:
+    # Message format
+    # <message> is where the sender's text gets inserted
+    format: "<light_purple>[Staff] [<server>] <player>> <message>"
+    # Channel command
+    # Command used to send a message in this channel
+    command: "s"
+    # The permission required to use and receive this channel
+    permission: chat.network.staff

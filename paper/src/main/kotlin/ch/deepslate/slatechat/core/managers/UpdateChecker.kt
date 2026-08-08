@@ -2,20 +2,14 @@ package ch.deepslate.slatechat.core.managers
 
 import ch.deepslate.slatechat.SlateChat
 import ch.deepslate.slatechat.core.format.Messages
+import ch.deepslate.slatechat.common.update.GitLabReleaseCheck
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
-import java.util.regex.Pattern
 
 /**
- * Checks GitLab's releases/permalink/latest endpoint for a newer SlateChat version.
- * The CI pipeline already creates a GitLab Release (tag vX.Y.Z) on every version bump,
- * so this endpoint always reflects the latest published release for free.
+ * Checks GitLab's releases/permalink/latest endpoint (via [GitLabReleaseCheck], shared with the
+ * velocity module) for a newer SlateChat version.
  *
  * Fully async and fail-silent: offline servers, GitLab downtime, or a forked/mirrored
  * project must never affect startup or chat. All player/console-facing text comes from
@@ -23,12 +17,7 @@ import java.util.regex.Pattern
  */
 object UpdateChecker {
 
-    private const val RELEASE_API_URL =
-        "https://gitlab.com/api/v4/projects/deepslatech%2Fslatechat/releases/permalink/latest"
-    private const val RELEASE_PAGE_URL =
-        "https://gitlab.com/deepslatech/slatechat/-/releases/permalink/latest"
-
-    private val TAG_PATTERN: Pattern = Pattern.compile("\"tag_name\"\\s*:\\s*\"v?([0-9.]+)\"")
+    private const val RELEASE_PAGE_URL = GitLabReleaseCheck.RELEASE_PAGE_URL
 
     @Volatile
     private var latestVersion: String? = null
@@ -44,13 +33,13 @@ object UpdateChecker {
 
         Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
             val current = SlateChat.instance.pluginMeta.version
-            val remote = fetchLatestTag()
+            val remote = GitLabReleaseCheck.fetchLatestTag()
 
             val status = when {
                 remote == null ->
                     msg("update_console_check_failed", "<red>Could not check for updates.")
 
-                isNewer(remote, current) -> {
+                GitLabReleaseCheck.isNewer(remote, current) -> {
                     latestVersion = remote
                     msg("update_console_log", "<yellow>A new version (<version>) is available! You are running <current>. Download: <url>")
                         .replace("<version>", remote)
@@ -92,14 +81,14 @@ object UpdateChecker {
     fun checkNow(sender: CommandSender) {
         Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
             val current = SlateChat.instance.pluginMeta.version
-            val remote = fetchLatestTag()
+            val remote = GitLabReleaseCheck.fetchLatestTag()
 
             if (remote == null) {
                 sender.sendMessage(Messages.deserialize(msg("update_check_failed", "<red>Could not reach GitLab to check for updates. Try again later.")))
                 return@runNow
             }
 
-            if (isNewer(remote, current)) {
+            if (GitLabReleaseCheck.isNewer(remote, current)) {
                 latestVersion = remote
                 sender.sendMessage(Messages.deserialize(availableMsg(remote)))
             } else {
@@ -122,47 +111,4 @@ object UpdateChecker {
 
     private fun msg(path: String, default: String): String =
         Messages.raw(SlateChat.instance.config, path, default)
-
-    /** GET the release API and pull out tag_name, or null on any failure. Never throws. */
-    private fun fetchLatestTag(): String? {
-        return try {
-            val client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5))
-                // GitLab's permalink/latest endpoint answers with a 302 to the actual
-                // release resource, not a direct 200 -- HttpClient doesn't follow
-                // redirects by default, so this has to be explicit.
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build()
-
-            val request = HttpRequest.newBuilder()
-                .uri(URI.create(RELEASE_API_URL))
-                .timeout(Duration.ofSeconds(5))
-                .GET()
-                .build()
-
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            if (response.statusCode() != 200) return null
-
-            val matcher = TAG_PATTERN.matcher(response.body())
-            if (!matcher.find()) return null
-
-            matcher.group(1)
-        } catch (_: Exception) {
-            // Offline server, GitLab unreachable, forked project, etc.
-            null
-        }
-    }
-
-    /** Simple dot-separated numeric comparison — no need for full semver here. */
-    private fun isNewer(remote: String, current: String): Boolean {
-        val remoteParts = remote.split(".").mapNotNull { it.toIntOrNull() }
-        val currentParts = current.split(".").mapNotNull { it.toIntOrNull() }
-
-        for (i in 0 until maxOf(remoteParts.size, currentParts.size)) {
-            val r = remoteParts.getOrElse(i) { 0 }
-            val c = currentParts.getOrElse(i) { 0 }
-            if (r != c) return r > c
-        }
-        return false
-    }
 }

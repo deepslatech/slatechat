@@ -26,5 +26,8 @@ subprojects {
 
         // Scarsz Nexus (DiscordSRV, paper module only)
         maven("https://nexus.scarsz.me/content/groups/public/")
+
+        // William278's repo (PAPIProxyBridge, velocity module only)
+        maven("https://repo.william278.net/releases/")
     }
 }
