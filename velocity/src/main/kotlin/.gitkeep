@@ -1,1 +1,0 @@
-Retained on purpose: Gradle allows an empty Kotlin source set (proves the multi-module wiring for Stage 1). Real Velocity plugin content lands in Stage 2.

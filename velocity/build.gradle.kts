@@ -1,21 +1,23 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// Placeholder module, deliberately near-empty -- this monorepo split is landing before there's
-// any real Velocity plugin code to put here. The shadow jar packaging below is already wired up
-// (so CI can build and release a SlateChat-Velocity jar alongside paper's from day one), but the
-// jar itself has nothing Velocity-specific in it yet. Once a real Velocity plugin lands: its
-// `@Plugin` annotation is processed by a compile-time annotation processor, which in a Kotlin
-// module needs `id("org.jetbrains.kotlin.kapt")` + `kapt("com.velocitypowered:velocity-api:...")`
-// alongside the usual `compileOnly` of the same artifact -- `compileOnly` alone isn't enough,
-// unlike a plain Paper `compileOnly(paper-api)`.
+// `kapt`, not just `compileOnly` (and not Java's `annotationProcessor`, which doesn't apply to
+// Kotlin sources): velocity-api's `@Plugin` annotation is read by a compile-time annotation
+// processor that generates the velocity-plugin.json manifest baked into the jar.
 plugins {
     kotlin("jvm")
+    kotlin("kapt")
     id("com.gradleup.shadow")
 }
 
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":common"))
+
+    // Velocity API -- provided by the proxy at runtime, same compileOnly convention as paper's
+    // paper-api. Pinned to the 3.x line deliberately: 4.0.0/4.1.0-SNAPSHOT both require JVM 25,
+    // this project targets 21 (see jvmToolchain below).
+    compileOnly("com.velocitypowered:velocity-api:3.5.1")
+    kapt("com.velocitypowered:velocity-api:3.5.1")
 }
 
 kotlin {
