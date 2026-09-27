@@ -51,7 +51,22 @@ tell:
     self_tell_blocked: "<red>You cannot message yourself."
     # Sent to /r when the player has nobody to reply to yet
     no_reply_target: "<red>You have nobody to reply to."
-    # Sent when /socialspy is toggled on
+    # Sent when /socialspy (no args) is toggled on -- this server only, unchanged by anything
+    # below
     socialspy_on: "<green>Socialspy enabled -- you will now see other players' tells."
-    # Sent when /socialspy is toggled off
+    # Sent when /socialspy (no args) is toggled off
     socialspy_off: "<yellow>Socialspy disabled."
+    # Sent when /socialspy all is used successfully -- network-wide, every server
+    socialspy_network_all_on: "<green>Socialspy enabled network-wide -- you will now see tells sent on any server."
+    # Sent when /socialspy server <name> is used successfully. <server> is the server name as
+    # configured on the Velocity proxy, not a SlateChat setting.
+    socialspy_network_server_on: "<green>Socialspy enabled for <server> -- you will now see tells sent on that server."
+    # Sent when an active network mode (/socialspy all or /socialspy server <name>) is turned
+    # back off -- running the same one a second time toggles it off entirely, it does not fall
+    # back to the local (this-server-only) mode.
+    socialspy_network_off: "<yellow>Network socialspy disabled."
+    # Sent when /socialspy server <name> is given a name that isn't a known server on this
+    # network
+    socialspy_unknown_server: "<red>Unknown server '<server>'."
+    # Sent when /socialspy all or /socialspy server <name> can't reach the proxy in time
+    socialspy_network_unavailable: "<red>Could not reach the network -- try again in a moment."

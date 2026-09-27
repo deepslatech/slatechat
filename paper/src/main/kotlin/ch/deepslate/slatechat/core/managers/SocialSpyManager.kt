@@ -28,4 +28,12 @@ object SocialSpyManager {
         player.persistentDataContainer.set(key, PersistentDataType.BOOLEAN, enabled)
         return enabled
     }
+
+    /** Explicit set-to-off, distinct from [toggle] -- used when a network socialspy scope
+     *  command needs to turn local mode off unconditionally (the two are mutually exclusive,
+     *  one active mode at a time), where calling [toggle] would incorrectly flip it *on* if it
+     *  happened to already be off. */
+    fun disable(player: Player) {
+        player.persistentDataContainer.set(key, PersistentDataType.BOOLEAN, false)
+    }
 }

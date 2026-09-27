@@ -5,6 +5,9 @@ import ch.deepslate.slatechat.velocity.commands.SlateCommand
 import ch.deepslate.slatechat.velocity.config.loadNetworkChannels
 import ch.deepslate.slatechat.velocity.network.ProxyMessenger
 import ch.deepslate.slatechat.velocity.network.ProxyPing
+import ch.deepslate.slatechat.velocity.network.SocialSpyScopeHandler
+import ch.deepslate.slatechat.velocity.network.SocialSpySubscriptions
+import ch.deepslate.slatechat.velocity.network.TellRelayHandler
 import ch.deepslate.slatechat.velocity.update.UpdateCheck
 import com.google.inject.Inject
 import com.velocitypowered.api.command.BrigadierCommand
@@ -54,6 +57,15 @@ class SlateChatVelocity @Inject constructor(
         server.eventManager.register(this, proxyMessenger)
         proxyMessenger.install()
         ProxyPing.install(proxyMessenger)
+
+        // Cross-server /tell relay + network-scope /socialspy (see velocity/.../network/
+        // TellRelayHandler.kt and SocialSpyScopeHandler.kt) -- both share one subscription
+        // registry, so it's constructed once here and handed to each. Registered on the event
+        // bus for its own DisconnectEvent cleanup, same reasoning as proxyMessenger above.
+        val subscriptions = SocialSpySubscriptions()
+        server.eventManager.register(this, subscriptions)
+        TellRelayHandler(server, proxyMessenger, subscriptions, logger, this).install()
+        SocialSpyScopeHandler(server, proxyMessenger, subscriptions).install()
 
         UpdateCheck.check(readBundledVersion(), logger)
 

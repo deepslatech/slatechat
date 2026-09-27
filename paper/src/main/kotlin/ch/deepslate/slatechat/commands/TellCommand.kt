@@ -5,6 +5,7 @@ import ch.deepslate.slatechat.core.format.Messages
 import ch.deepslate.slatechat.core.integrations.EmojiSuggestions
 import ch.deepslate.slatechat.core.managers.TellManager
 import ch.deepslate.slatechat.core.model.Tell
+import ch.deepslate.slatechat.core.model.TellRelay
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.Suggestions
@@ -84,18 +85,32 @@ object TellCommand {
             return
         }
 
-        val target = resolveTarget(sender, targetName)
-        if (target == null) {
-            sender.sendMessage(msg("target_offline"))
-            return
-        }
-        if (target.uniqueId == sender.uniqueId) {
-            sender.sendMessage(msg("self_tell_blocked"))
-            return
-        }
-
-        Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
-            Tell(sender, target, text).validate().prepare().send()
+        // Exact-name match against this server only (not the partial-match Bukkit.getPlayer
+        // overload) -- a vanished player being reachable off a lucky partial match would defeat
+        // the point of hiding them at all.
+        val local = Bukkit.getPlayerExact(targetName)
+        when {
+            local != null && visibleTo(sender, local) -> {
+                if (local.uniqueId == sender.uniqueId) {
+                    sender.sendMessage(msg("self_tell_blocked"))
+                    return
+                }
+                Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
+                    Tell(sender, local, text).validate().prepare().send()
+                }
+            }
+            // Known to be on this server but vanished-from-sender with no bypass -- stays
+            // fully local, same target_offline wording a relay attempt would end up showing
+            // anyway (Velocity would just re-discover them here and re-run this same vanish
+            // check), so there's no reason to pay a network round trip for it.
+            local != null ->
+                sender.sendMessage(msg("target_offline"))
+            // No exact-name match on this server at all -- try the network.
+            else ->
+                Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
+                    TellRelay(sender, targetQuery = targetName, targetUuid = null, displayTargetName = targetName, text, notFoundMessageKey = "target_offline")
+                        .validate().prepare().send()
+                }
         }
     }
 
@@ -105,26 +120,30 @@ object TellCommand {
             return
         }
 
-        val target = TellManager.replyTargetOf(sender)?.let { Bukkit.getPlayer(it) }
-        if (target == null || !visibleTo(sender, target)) {
+        val partner = TellManager.replyTargetOf(sender)
+        if (partner == null) {
             sender.sendMessage(msg("no_reply_target"))
             return
         }
 
-        Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
-            Tell(sender, target, text).validate().prepare().send()
+        val local = Bukkit.getPlayer(partner.uuid)
+        when {
+            local != null && visibleTo(sender, local) ->
+                Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
+                    Tell(sender, local, text).validate().prepare().send()
+                }
+            // Known locally but vanished-from-sender with no bypass -- stays fully local,
+            // preserving today's exact behavior (no_reply_target, not a relay attempt).
+            local != null ->
+                sender.sendMessage(msg("no_reply_target"))
+            // Partner isn't on this server at all -- try the network, using TellManager's
+            // cached uuid+name since there's no live Player to resolve a fresh query from.
+            else ->
+                Bukkit.getAsyncScheduler().runNow(SlateChat.instance) {
+                    TellRelay(sender, targetQuery = "", targetUuid = partner.uuid, displayTargetName = partner.name, text, notFoundMessageKey = "no_reply_target")
+                        .validate().prepare().send()
+                }
         }
-    }
-
-    /**
-     * Exact-name match only (not the partial-match `Bukkit.getPlayer(String)` overload) -- a
-     * vanished player being reachable off a lucky partial match would defeat the point of
-     * hiding them at all. Returns null for both "genuinely offline" and "online but vanished
-     * from this sender" -- indistinguishable on purpose, see tell.yml's `target_offline`.
-     */
-    private fun resolveTarget(sender: Player, name: String): Player? {
-        val target = Bukkit.getPlayerExact(name) ?: return null
-        return if (visibleTo(sender, target)) target else null
     }
 
     /** [Player.canSee] is the native Bukkit/Paper visibility check -- respects any vanish
@@ -132,6 +151,11 @@ object TellCommand {
     private fun visibleTo(sender: Player, target: Player): Boolean =
         sender.canSee(target) || sender.hasPermission(VANISH_BYPASS_PERMISSION)
 
+    // Local-only, deliberately not extended to the network: suggesting a cross-server name would
+    // mean either a live per-keystroke round trip to Velocity for every remote player's identity
+    // + vanish state, or a locally cached copy of it going stale between updates -- both worse
+    // than just not suggesting them. Typing the exact name still works fine (see TellRelay),
+    // this only affects tab-complete.
     private fun suggestTargets(sender: CommandSender, builder: SuggestionsBuilder): CompletableFuture<Suggestions> {
         if (sender !is Player) return builder.buildFuture()
 

@@ -28,6 +28,18 @@ class PayloadWriter {
 
     fun writeBoolean(value: Boolean): PayloadWriter = apply { out.writeBoolean(value) }
 
+    /** A presence flag followed by the UUID's two longs only if present -- not a sentinel
+     *  all-zero UUID, which isn't actually guaranteed unused (some ecosystems use it as a
+     *  "console" sentinel of their own) and reads worse than an explicit optional at the call
+     *  site anyway. */
+    fun writeOptionalUuid(value: UUID?): PayloadWriter = apply {
+        out.writeBoolean(value != null)
+        if (value != null) {
+            out.writeLong(value.mostSignificantBits)
+            out.writeLong(value.leastSignificantBits)
+        }
+    }
+
     fun build(subchannel: String): NetworkMessage = NetworkMessage(subchannel, bytes.toByteArray())
 }
 
@@ -40,4 +52,9 @@ class PayloadReader(payload: ByteArray) {
     fun readUuid(): UUID = UUID(input.readLong(), input.readLong())
 
     fun readBoolean(): Boolean = input.readBoolean()
+
+    fun readOptionalUuid(): UUID? {
+        val present = input.readBoolean()
+        return if (present) UUID(input.readLong(), input.readLong()) else null
+    }
 }

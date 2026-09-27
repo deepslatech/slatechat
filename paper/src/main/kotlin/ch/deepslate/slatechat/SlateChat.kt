@@ -8,6 +8,8 @@ import ch.deepslate.slatechat.core.managers.FocusManager
 import ch.deepslate.slatechat.core.managers.UpdateChecker
 import ch.deepslate.slatechat.core.network.ProxyMessenger
 import ch.deepslate.slatechat.core.network.ProxyPing
+import ch.deepslate.slatechat.core.network.SocialSpyNetwork
+import ch.deepslate.slatechat.core.network.TellRelayClient
 import ch.deepslate.slatechat.core.placeholders.ChatPlaceholder
 import ch.deepslate.slatechat.gui.ChatColorMenuListener
 import ch.deepslate.slatechat.gui.HexColorMenuListener
@@ -91,6 +93,8 @@ class SlateChat : JavaPlugin() {
         // same as registering a Bukkit channel nobody on the other end reads.
         ProxyMessenger.install(this)
         ProxyPing.install()
+        TellRelayClient.install()
+        SocialSpyNetwork.install()
 
         // Events
         server.pluginManager.registerEvents(LocalListener(), this)
